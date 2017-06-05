@@ -70,7 +70,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
     # Define TF model graph
-    model = cnn_model()
+    model = model_A()
     preds = model(x)
     print("Defined TensorFlow model graph.")
 
@@ -105,7 +105,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
-    model_2 = cnn_model()
+    model_2 = model_A()
     preds_2 = model_2(x)
     fgsm2 = FastGradientMethod(model_2, sess=sess)
     preds_2_adv = model_2(fgsm2.generate(x, **fgsm_params))

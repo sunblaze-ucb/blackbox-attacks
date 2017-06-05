@@ -7,7 +7,7 @@ from distutils.version import LooseVersion
 import keras
 from keras.utils import np_utils
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
+from keras.layers import Dense, Activation, Flatten, Dropout
 import numpy as np
 from six.moves import xrange
 from utils import conv_2d
@@ -50,6 +50,43 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
               Activation('relu'),
               conv_2d((nb_filters * 2), (5, 5), (1, 1), "valid"),
               Activation('relu'),
+              Flatten(),
+              Dense(nb_classes)]
+
+    for layer in layers:
+        model.add(layer)
+
+    if logits:
+        logits_tensor = model(input_ph)
+    model.add(Activation('softmax'))
+
+    if logits:
+        return model, logits_tensor
+    else:
+        return model
+
+
+def model_A(logits=False, input_ph=None, img_rows=28, img_cols=28,
+              channels=1, nb_filters=64, nb_classes=10):
+    """
+    Defines CNN model A from Ensemble adversarial Training
+    """
+    model = Sequential()
+
+    # Define the layers successively (convolution layers are version dependent)
+    if keras.backend.image_dim_ordering() == 'th':
+        input_shape = (channels, img_rows, img_cols)
+    else:
+        input_shape = (img_rows, img_cols, channels)
+
+    layers = [conv_2d(nb_filters, (5, 5), (1, 1), "same",
+                      input_shape=input_shape),
+              Activation('relu'),
+              conv_2d((nb_filters), (5, 5), (1, 1), "valid"),
+              Activation('relu'),
+              Dropout(0.25),
+              Dense(128, activation="relu"),
+              Dropout(0.5),
               Flatten(),
               Dense(nb_classes)]
 
