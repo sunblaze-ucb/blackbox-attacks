@@ -13,7 +13,7 @@ from utils_mnist import data_mnist
 from utils_tf import model_train, model_eval
 from attacks import FastGradientMethod
 from utils import AccuracyReport
-from models import cnn_model
+from models import *
 
 FLAGS = flags.FLAGS
 
