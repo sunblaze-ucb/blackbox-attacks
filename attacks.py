@@ -133,7 +133,7 @@ class FastGradientMethod(Attack):
         assert self.parse_params(**kwargs)
 
         if self.back == 'tf':
-            from .attacks_tf import fgm
+            from attacks_tf import fgm
         else:
             from .attacks_th import fgm
 

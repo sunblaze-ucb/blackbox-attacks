@@ -7,7 +7,7 @@ import numpy as np
 import sys
 import warnings
 
-from . import utils
+import utils
 
 
 def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,

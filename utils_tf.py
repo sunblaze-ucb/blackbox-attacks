@@ -10,11 +10,10 @@ import os
 import six
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-from tensorflow.python.ops.losses.util import add_loss
 import time
 import warnings
 
-from .utils import batch_indices, _ArgsWrapper
+from 	utils import batch_indices, _ArgsWrapper
 
 from tensorflow.python.platform import flags
 
@@ -355,17 +354,3 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
         x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
         x_norm = tf.multiply(x, x_inv_norm)
         return tf.reshape(x_norm, x_shape, scope)
-
-
-def kl_with_logits(q_logits, p_logits, scope=None,
-                   loss_collection=tf.GraphKeys.REGULARIZATION_LOSSES):
-    """Helper function to compute kl-divergence KL(q || p)
-    """
-    with tf.name_scope(scope, "kl_divergence") as name:
-        q = tf.nn.softmax(q_logits)
-        q_log = tf.nn.log_softmax(q_logits)
-        p_log = tf.nn.log_softmax(p_logits)
-        loss = tf.reduce_mean(tf.reduce_sum(q * (q_log - p_log), axis=1),
-                              name=name)
-        add_loss(loss, loss_collection)
-        return loss
