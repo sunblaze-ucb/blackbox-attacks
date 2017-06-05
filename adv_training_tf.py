@@ -51,45 +51,46 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
               "'th', temporarily setting to 'tf'")
 
     # Create TF session and set as Keras backend session
-    sess = tf.Session()
-    keras.backend.set_session(sess)
+    with tf.device('/gpu:5'):
+        sess = tf.Session()
+        keras.backend.set_session(sess)
 
-    # Get MNIST test data
-    X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
-                                                  train_end=train_end,
-                                                  test_start=test_start,
-                                                  test_end=test_end)
+        # Get MNIST test data
+        X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
+                                                      train_end=train_end,
+                                                      test_start=test_start,
+                                                      test_end=test_end)
 
-    # Use label smoothing
-    assert Y_train.shape[1] == 10.
-    label_smooth = .1
-    Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
+        # Use label smoothing
+        assert Y_train.shape[1] == 10.
+        label_smooth = .1
+        Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
 
-    # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
-    y = tf.placeholder(tf.float32, shape=(None, 10))
+        # Define input TF placeholder
+        x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
+        y = tf.placeholder(tf.float32, shape=(None, 10))
 
-    # Define TF model graph
-    model = model_A()
-    preds = model(x)
-    print("Defined TensorFlow model graph.")
+        # Define TF model graph
+        model = model_A()
+        preds = model(x)
+        print("Defined TensorFlow model graph.")
 
-    def evaluate():
-        # Evaluate the accuracy of the MNIST model on legitimate test examples
-        eval_params = {'batch_size': batch_size}
-        acc = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
-        report.clean_train_clean_eval = acc
-        assert X_test.shape[0] == test_end - test_start, X_test.shape
-        print('Test accuracy on legitimate examples: %0.4f' % acc)
+        def evaluate():
+            # Evaluate the accuracy of the MNIST model on legitimate test examples
+            eval_params = {'batch_size': batch_size}
+            acc = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
+            report.clean_train_clean_eval = acc
+            assert X_test.shape[0] == test_end - test_start, X_test.shape
+            print('Test accuracy on legitimate examples: %0.4f' % acc)
 
-    # Train an MNIST model
-    train_params = {
-        'nb_epochs': nb_epochs,
-        'batch_size': batch_size,
-        'learning_rate': learning_rate
-    }
-    model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
-                args=train_params)
+        # Train an MNIST model
+        train_params = {
+            'nb_epochs': nb_epochs,
+            'batch_size': batch_size,
+            'learning_rate': learning_rate
+        }
+        model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
+                    args=train_params)
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
     fgsm = FastGradientMethod(model, sess=sess)
