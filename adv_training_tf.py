@@ -92,45 +92,45 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
                     args=train_params)
 
-    # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
-    fgsm = FastGradientMethod(model, sess=sess)
-    fgsm_params = {'eps': 0.3}
-    adv_x = fgsm.generate(x, **fgsm_params)
-    preds_adv = model(adv_x)
+        # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
+        fgsm = FastGradientMethod(model, sess=sess)
+        fgsm_params = {'eps': 0.3}
+        adv_x = fgsm.generate(x, **fgsm_params)
+        preds_adv = model(adv_x)
 
-    # Evaluate the accuracy of the MNIST model on adversarial examples
-    eval_par = {'batch_size': batch_size}
-    acc = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
-    print('Test accuracy on adversarial examples: %0.4f\n' % acc)
-    report.clean_train_adv_eval = acc
+        # Evaluate the accuracy of the MNIST model on adversarial examples
+        eval_par = {'batch_size': batch_size}
+        acc = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
+        print('Test accuracy on adversarial examples: %0.4f\n' % acc)
+        report.clean_train_adv_eval = acc
 
-    print("Repeating the process, using adversarial training")
-    # Redefine TF model graph
-    model_2 = model_A()
-    preds_2 = model_2(x)
-    fgsm2 = FastGradientMethod(model_2, sess=sess)
-    preds_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
+        print("Repeating the process, using adversarial training")
+        # Redefine TF model graph
+        model_2 = model_A()
+        preds_2 = model_2(x)
+        fgsm2 = FastGradientMethod(model_2, sess=sess)
+        preds_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
 
-    def evaluate_2():
-        # Accuracy of adversarially trained model on legitimate test inputs
-        eval_params = {'batch_size': batch_size}
-        accuracy = model_eval(sess, x, y, preds_2, X_test, Y_test,
-                              args=eval_params)
-        print('Test accuracy on legitimate examples: %0.4f' % accuracy)
-        report.adv_train_clean_eval = accuracy
+        def evaluate_2():
+            # Accuracy of adversarially trained model on legitimate test inputs
+            eval_params = {'batch_size': batch_size}
+            accuracy = model_eval(sess, x, y, preds_2, X_test, Y_test,
+                                  args=eval_params)
+            print('Test accuracy on legitimate examples: %0.4f' % accuracy)
+            report.adv_train_clean_eval = accuracy
 
-        # Accuracy of the adversarially trained model on adversarial examples
-        accuracy = model_eval(sess, x, y, preds_2_adv, X_test,
-                              Y_test, args=eval_params)
-        print('Test accuracy on adversarial examples: %0.4f' % accuracy)
-        report.adv_train_adv_eval = accuracy
+            # Accuracy of the adversarially trained model on adversarial examples
+            accuracy = model_eval(sess, x, y, preds_2_adv, X_test,
+                                  Y_test, args=eval_params)
+            print('Test accuracy on adversarial examples: %0.4f' % accuracy)
+            report.adv_train_adv_eval = accuracy
 
-    # Perform and evaluate adversarial training
-    model_train(sess, x, y, preds_2, X_train, Y_train,
-                predictions_adv=preds_2_adv, evaluate=evaluate_2,
-                args=train_params)
+        # Perform and evaluate adversarial training
+        model_train(sess, x, y, preds_2, X_train, Y_train,
+                    predictions_adv=preds_2_adv, evaluate=evaluate_2,
+                    args=train_params)
 
-    return report
+        return report
 
 
 def main(argv=None):
