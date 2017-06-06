@@ -84,10 +84,11 @@ def model_A(logits=False, input_ph=None, img_rows=28, img_cols=28,
               Activation('relu'),
               conv_2d((nb_filters), (5, 5), (1, 1), "valid"),
               Activation('relu'),
+	      Flatten(),              
               Dropout(0.25),
-              Dense(128, activation="relu"),
+              Dense(128),
+	      Activation('relu'),
               Dropout(0.5),
-              Flatten(),
               Dense(nb_classes)]
 
     for layer in layers:
