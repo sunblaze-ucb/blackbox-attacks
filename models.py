@@ -85,10 +85,10 @@ def model_A(logits=False, input_ph=None, img_rows=28, img_cols=28,
               conv_2d((nb_filters), (5, 5), (1, 1), "valid"),
               Activation('relu'),
 	      Flatten(),              
-              Dropout(0.25),
+             # Dropout(0.25),
               Dense(128),
 	      Activation('relu'),
-              Dropout(0.5),
+             # Dropout(0.5),
               Dense(nb_classes)]
 
     for layer in layers:
@@ -128,16 +128,15 @@ def model_B(logits=False, input_ph=None, img_rows=28, img_cols=28,
     else:
         input_shape = (img_rows, img_cols, channels)
 
-    layers = [Dropout(0.2),
-              ,conv_2d(nb_filters, (8, 8), (2, 2), "same",
-                      input_shape=input_shape),
+    layers = [Dropout(0.2,input_shape=input_shape),
+              conv_2d(nb_filters, (8, 8), (2, 2), "same"),
               Activation('relu'),
               conv_2d((nb_filters * 2), (6, 6), (2, 2), "valid"),
               Activation('relu'),
               conv_2d((nb_filters * 2), (5, 5), (1, 1), "valid"),
               Activation('relu'),
-              Flatten(),
               Dropout(0.5),
+	      Flatten(),
               Dense(nb_classes)]
 
     for layer in layers:

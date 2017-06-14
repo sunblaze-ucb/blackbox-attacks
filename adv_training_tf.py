@@ -62,16 +62,16 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                       test_end=test_end)
 
         # Use label smoothing
-        assert Y_train.shape[1] == 10.
-        label_smooth = .1
-        Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
+        # assert Y_train.shape[1] == 10.
+        # label_smooth = .1
+        # Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
 
         # Define input TF placeholder
         x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
         y = tf.placeholder(tf.float32, shape=(None, 10))
 
         # Define TF model graph
-        model = model_A()
+        model = cnn_model()
         preds = model(x)
         print("Defined TensorFlow model graph.")
 
@@ -106,7 +106,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
         print("Repeating the process, using adversarial training")
         # Redefine TF model graph
-        model_2 = model_A()
+        model_2 = cnn_model()
         preds_2 = model_2(x)
         fgsm2 = FastGradientMethod(model_2, sess=sess)
         preds_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
