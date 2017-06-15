@@ -31,6 +31,7 @@ def main(model_name, adv_model_names, model_type):
     y = K.placeholder(shape=(FLAGS.BATCH_SIZE, FLAGS.NUM_CLASSES))
 
     eps = args.eps
+    norm = args.norm
 
     # if src_models is not None, we train on adversarial examples that come
     # from multiple models
@@ -53,6 +54,7 @@ def main(model_name, adv_model_names, model_type):
     # Finally print the result!
     test_error = tf_test_error_rate(model, x, X_test, Y_test)
     print('Test error: %.1f%%' % test_error)
+    model_name += '_' + str(eps) + '_' + str(norm)
     save_model(model, model_name)
     json_string = model.to_json()
     with open(model_name+'.json', 'wr') as f:
@@ -69,6 +71,8 @@ if __name__ == '__main__':
                         help="number of epochs")
     parser.add_argument("--eps", type=float, default=0.3,
                         help="FGS attack scale")
+    parser.add_argument("--norm", type=str, default='linf',
+                        help="norm used to constrain perturbation")
 
     args = parser.parse_args()
     main(args.model, args.adv_models, args.type)
