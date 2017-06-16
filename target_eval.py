@@ -78,21 +78,21 @@ def main(attack, target_model_name, source_model_names):
             # Carlini & Wagner attack
             if attack == "CW":
                 l = 1000
-         	    pickle_name = 'CW_adv_samples/' + basename(src_model_name) +'_adv_'+str(eps)+'.p'
-        	    Y_test = Y_test[0:l]
-        	    if os.path.exists(pickle_name):
-                    print 'Loading adversarial samples'
-                    X_adv = pickle.load(open(pickle_name,'rb'))
-                    ofile = open('CW_attack_success.txt','a')
+                pickle_name = 'CW_adv_samples/' + basename(src_model_name) +'_adv_'+str(eps)+'.p'
+                Y_test = Y_test[0:l]
+                if os.path.exists(pickle_name):
+                print 'Loading adversarial samples'
+                X_adv = pickle.load(open(pickle_name,'rb'))
+                ofile = open('CW_attack_success.txt','a')
 
-                    err = tf_test_error_rate(src_model, x, X_adv, Y_test)
-                    print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
-                    ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
-                    err = tf_test_error_rate(target_model, x, X_adv, Y_test)
-                    print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
-                    ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
-                    ofile.close()
-                    continue
+                err = tf_test_error_rate(src_model, x, X_adv, Y_test)
+                print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
+                ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
+                err = tf_test_error_rate(target_model, x, X_adv, Y_test)
+                print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
+                ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
+                ofile.close()
+                continue
 
                 X_test = X_test[0:l]
 
@@ -105,7 +105,7 @@ def main(attack, target_model_name, source_model_names):
                 X_adv = X_test + r
                 pickle.dump(X_adv, open(pickle_name,'wb'))
 
-        	    ofile = open('CW_attack_success.txt','a')
+                ofile = open('CW_attack_success.txt','a')
 
                 err = tf_test_error_rate(src_model, x, X_adv, Y_test)
                 print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
