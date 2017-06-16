@@ -48,82 +48,85 @@ def main(attack, target_model_name, source_model_names):
             print '{}: {:.1f}'.format(basename(name), err)
         return
 
-    eps = args.eps
+    eps_list = list(np.linspace(0.01,0.1,10))
+    eps_list.extend(np.linspace(0.2,0.5,4))
 
-    # take the random step in the RAND+FGSM
-    if attack == "rand_fgs":
-        X_test = np.clip(
-            X_test + args.alpha * np.sign(np.random.randn(*X_test.shape)),
-            0.0, 1.0)
-        eps -= args.alpha
+    print(eps_list)
 
-    for i in range(len(source_models)):
-	src_model = source_models[i]
-	src_model_name = source_model_names[i]
-        logits = src_model(x)
-        grad = gen_grad(x, logits, y)
+    for eps in eps_list:
+        # take the random step in the RAND+FGSM
+        if attack == "rand_fgs":
+            X_test = np.clip(
+                X_test + args.alpha * np.sign(np.random.randn(*X_test.shape)),
+                0.0, 1.0)
+            eps -= args.alpha
 
-        # FGSM and RAND+FGSM one-shot attack
-        if attack in ["fgs", "rand_fgs"]:
-            adv_x = symbolic_fgs(x, grad, eps=eps)
+        for i in range(len(source_models)):
+            src_model = source_models[i]
+            src_model_name = source_model_names[i]
+            logits = src_model(x)
+            grad = gen_grad(x, logits, y)
 
-        # iterative FGSM
-        if attack == "ifgs":
-            adv_x = iter_fgs(src_model, x, y, steps=args.steps, eps=args.eps/args.steps)
+            # FGSM and RAND+FGSM one-shot attack
+            if attack in ["fgs", "rand_fgs"]:
+                adv_x = symbolic_fgs(x, grad, eps=eps)
 
-        # Carlini & Wagner attack
-        if attack == "CW":
-            l = 1000
-     	    pickle_name = 'CW_adv_samples/' + basename(src_model_name) +'_adv_'+str(args.eps)+'.p'
-    	    Y_test = Y_test[0:l]
-    	    if os.path.exists(pickle_name):
-    		print 'Loading adversarial samples'
-    		X_adv = pickle.load(open(pickle_name,'rb'))
-    		ofile = open('CW_attack_success.txt','a')
+            # iterative FGSM
+            if attack == "ifgs":
+                adv_x = iter_fgs(src_model, x, y, steps=args.steps, eps=eps/args.steps)
 
-            	err = tf_test_error_rate(src_model, x, X_adv, Y_test)
-            	print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(src_model_name), err)
-            	ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(src_model_name), err))
+            # Carlini & Wagner attack
+            if attack == "CW":
+                l = 1000
+         	    pickle_name = 'CW_adv_samples/' + basename(src_model_name) +'_adv_'+str(eps)+'.p'
+        	    Y_test = Y_test[0:l]
+        	    if os.path.exists(pickle_name):
+                    print 'Loading adversarial samples'
+                    X_adv = pickle.load(open(pickle_name,'rb'))
+                    ofile = open('CW_attack_success.txt','a')
+
+                    err = tf_test_error_rate(src_model, x, X_adv, Y_test)
+                    print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
+                    ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
+                    err = tf_test_error_rate(target_model, x, X_adv, Y_test)
+                    print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
+                    ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
+                    ofile.close()
+                    continue
+
+                X_test = X_test[0:l]
+
+                cli = CarliniLi(K.get_session(), src_model,
+                                targeted=False, confidence=args.kappa, eps=args.eps)
+
+                X_adv = cli.attack(X_test, Y_test)
+
+                r = np.clip(X_adv - X_test, -args.eps, args.eps)
+                X_adv = X_test + r
+                pickle.dump(X_adv, open(pickle_name,'wb'))
+
+        	    ofile = open('CW_attack_success.txt','a')
+
+                err = tf_test_error_rate(src_model, x, X_adv, Y_test)
+                print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
+                ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
                 err = tf_test_error_rate(target_model, x, X_adv, Y_test)
-                print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(target_model_name), err)
-                ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err))
+                print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
+                ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
+                ofile.close()
 
-            	ofile.close()
-            	continue
+                continue
 
-            X_test = X_test[0:l]
+            # compute the adversarial examples and evaluate
+            X_adv = batch_eval([x, y], [adv_x], [X_test, Y_test])[0]
 
-            cli = CarliniLi(K.get_session(), src_model,
-                            targeted=False, confidence=args.kappa, eps=args.eps)
-
-            X_adv = cli.attack(X_test, Y_test)
-
-            r = np.clip(X_adv - X_test, -args.eps, args.eps)
-            X_adv = X_test + r
-            pickle.dump(X_adv, open(pickle_name,'wb'))
-
-    	    ofile = open('CW_attack_success.txt','a')
-
+            # white-box attack
             err = tf_test_error_rate(src_model, x, X_adv, Y_test)
-            print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(src_model_name), err)
-    	    ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(src_model_name), err))
+            print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
+
+            # black-box attack
             err = tf_test_error_rate(target_model, x, X_adv, Y_test)
-            print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(target_model_name), err)
-            ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err))
-
-    	    ofile.close()
-            return
-
-        # compute the adversarial examples and evaluate
-        X_adv = batch_eval([x, y], [adv_x], [X_test, Y_test])[0]
-
-        # white-box attack
-        err = tf_test_error_rate(src_model, x, X_adv, Y_test)
-        print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(src_model_name), err)
-
-        # black-box attack
-        err = tf_test_error_rate(target_model, x, X_adv, Y_test)
-        print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(target_model_name), err)
+            print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
 
 
 if __name__ == "__main__":
@@ -134,8 +137,8 @@ if __name__ == "__main__":
     parser.add_argument("target_model", help="target model for attack")
     parser.add_argument('source_models', nargs='*',
                             help='path to source model(s)')
-#    parser.add_argument("--eps", type=float, default=0.3,
- #                       help="FGS attack scale")
+   # parser.add_argument("--eps", type=float, default=0.3,
+   #                     help="FGS attack scale")
     parser.add_argument("--alpha", type=float, default=0.05,
                         help="RAND+FGSM random perturbation scale")
     parser.add_argument("--steps", type=int, default=10,
