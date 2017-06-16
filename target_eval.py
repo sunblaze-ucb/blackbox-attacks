@@ -32,7 +32,7 @@ def main(attack, target_model_name, source_model_names):
 
     # source model for crafting adversarial examples
     source_models = [None] * len(source_model_names)
-    for i in range(len(src_model_names)):
+    for i in range(len(source_model_names)):
 	    source_models[i] = load_model(source_model_names[i])
 
     # model(s) to target
@@ -57,7 +57,9 @@ def main(attack, target_model_name, source_model_names):
             0.0, 1.0)
         eps -= args.alpha
 
-    for src_model in source_models:
+    for i in range(len(source_models)):
+	src_model = source_models[i]
+	src_model_name = source_model_names[i]
         logits = src_model(x)
         grad = gen_grad(x, logits, y)
 
@@ -72,12 +74,12 @@ def main(attack, target_model_name, source_model_names):
         # Carlini & Wagner attack
         if attack == "CW":
             l = 1000
-     	    pickle_name = basename(src_model_name)+'_adv_'+str(args.eps)+'.p'
+     	    pickle_name = 'CW_adv_samples/' + basename(src_model_name) +'_adv_'+str(args.eps)+'.p'
     	    Y_test = Y_test[0:l]
     	    if os.path.exists(pickle_name):
-    		    print 'Loading adversarial samples'
-    		    X_adv = pickle.load(open(pickle_name,'rb'))
-    		    ofile = open('CW_attack_success.txt','a')
+    		print 'Loading adversarial samples'
+    		X_adv = pickle.load(open(pickle_name,'rb'))
+    		ofile = open('CW_attack_success.txt','a')
 
             	err = tf_test_error_rate(src_model, x, X_adv, Y_test)
             	print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(src_model_name), err)
@@ -87,7 +89,7 @@ def main(attack, target_model_name, source_model_names):
                 ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err))
 
             	ofile.close()
-            	return
+            	continue
 
             X_test = X_test[0:l]
 
@@ -132,8 +134,8 @@ if __name__ == "__main__":
     parser.add_argument("target_model", help="target model for attack")
     parser.add_argument('source_models', nargs='*',
                             help='path to source model(s)')
-    parser.add_argument("--eps", type=float, default=0.3,
-                        help="FGS attack scale")
+#    parser.add_argument("--eps", type=float, default=0.3,
+ #                       help="FGS attack scale")
     parser.add_argument("--alpha", type=float, default=0.05,
                         help="RAND+FGSM random perturbation scale")
     parser.add_argument("--steps", type=int, default=10,

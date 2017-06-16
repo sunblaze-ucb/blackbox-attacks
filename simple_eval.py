@@ -71,7 +71,8 @@ def main(attack, src_model_name, target_model_names):
     # Carlini & Wagner attack
     if attack == "CW":
 	l = 1000
- 	pickle_name = basename(src_model_name)+'_adv_'+str(args.eps)+'.p'
+ 	pickle_name = 'CW_adv_samples/' + basename(src_model_name)+'_adv_'+str(args.eps)+'.p'
+	print(pickle_name)
 	Y_test = Y_test[0:l]
 	if os.path.exists(pickle_name):
 		print 'Loading adversarial samples'

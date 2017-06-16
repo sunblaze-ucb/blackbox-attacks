@@ -7,6 +7,7 @@ from mnist import *
 from tf_utils import tf_train, tf_test_error_rate
 from attack_utils import gen_grad
 from fgs import symbolic_fgs
+from os.path import basename
 
 FLAGS = flags.FLAGS
 
@@ -36,9 +37,13 @@ def main(model_name, adv_model_names, model_type):
     # if src_models is not None, we train on adversarial examples that come
     # from multiple models
     adv_models = [None] * len(adv_model_names)
+    ens_str = ''
     for i in range(len(adv_model_names)):
         adv_models[i] = load_model(adv_model_names[i])
-
+	if len(adv_models)>0:
+	    name = basename(adv_model_names[i])
+	    model_index = name.replace('model','')
+	    ens_str += model_index
     model = model_mnist(type=model_type)
 
     x_advs = [None] * (len(adv_models) + 1)
@@ -54,7 +59,7 @@ def main(model_name, adv_model_names, model_type):
     # Finally print the result!
     test_error = tf_test_error_rate(model, x, X_test, Y_test)
     print('Test error: %.1f%%' % test_error)
-    model_name += '_' + str(eps) + '_' + str(norm)
+    model_name += '_' + str(eps) + '_' + str(norm) + '_' + ens_str
     save_model(model, model_name)
     json_string = model.to_json()
     with open(model_name+'.json', 'wr') as f:
