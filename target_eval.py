@@ -97,7 +97,7 @@ def main(attack, target_model_name, source_model_names):
                 X_test = X_test[0:l]
 
                 cli = CarliniLi(K.get_session(), src_model,
-                                targeted=False, confidence=args.kappa, eps=args.eps)
+                                targeted=False, confidence=args.kappa, eps=eps)
 
                 X_adv = cli.attack(X_test, Y_test)
 

@@ -110,6 +110,7 @@ class CarliniLi:
         # setup the adam optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.AdamOptimizer(self.LEARNING_RATE)
+	#optimizer = tf.train.GradientDescentOptimizer(self.LEARNING_RATE)
         train = optimizer.minimize(loss, var_list=[modifier])
 
         end_vars = tf.global_variables()

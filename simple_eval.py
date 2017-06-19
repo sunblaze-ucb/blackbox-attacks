@@ -9,6 +9,7 @@ from carlini import CarliniLi
 from attack_utils import gen_grad
 from tf_utils import tf_test_error_rate, batch_eval
 from os.path import basename
+from time import time
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
@@ -90,7 +91,7 @@ def main(attack, src_model_name, target_model_names):
         	ofile.close()
         	return
 	X_test = X_test[0:l]
-
+	time1 = time()
         cli = CarliniLi(K.get_session(), src_model,
                         targeted=False, confidence=args.kappa, eps=args.eps)
 
@@ -98,6 +99,9 @@ def main(attack, src_model_name, target_model_names):
 
         r = np.clip(X_adv - X_test, -args.eps, args.eps)
         X_adv = X_test + r
+	time2 = time()
+	print("Run with Adam took {}s".format(time2-time1))
+	
         pickle.dump(X_adv, open(pickle_name,'wb'))
 
 	ofile = open('CW_attack_success.txt','a')
