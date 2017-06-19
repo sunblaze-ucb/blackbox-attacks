@@ -48,8 +48,8 @@ def main(attack, target_model_name, source_model_names):
             print '{}: {:.1f}'.format(basename(name), err)
         return
 
-    eps_list = list(np.linspace(0.01,0.1,10))
-    eps_list.extend(np.linspace(0.2,0.5,4))
+    eps_list = list(np.linspace(0.1,1.0,5))
+    eps_list.extend(np.linspace(2.0,5.0,4))
 
     print(eps_list)
 
@@ -68,8 +68,10 @@ def main(attack, target_model_name, source_model_names):
             grad = gen_grad(x, logits, y)
 
             # FGSM and RAND+FGSM one-shot attack
-            if attack in ["fgs", "rand_fgs"]:
+            if attack in ["fgs", "rand_fgs"] and args.norm == 'inf':
                 adv_x = symbolic_fgs(x, grad, eps=eps)
+            elif attack in ["fgs", "rand_fgs"] and args.norm == 'two':
+                adv_x = symbolic_fg(x, grad, eps=eps)
 
             # iterative FGSM
             if attack == "ifgs":
@@ -145,6 +147,8 @@ if __name__ == "__main__":
                         help="Iterated FGS steps")
     parser.add_argument("--kappa", type=float, default=100,
                         help="CW attack confidence")
+    parser.add_argument("--norm", type=str, default='inf',
+                        help="Norm to use for attack")
 
     args = parser.parse_args()
     main(args.attack, args.target_model, args.source_models)

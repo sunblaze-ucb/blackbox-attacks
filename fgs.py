@@ -38,6 +38,7 @@ def symbolic_fg(x, grad, eps=0.3, clipping=True):
 
     if clipping:
         adv_x = K.clip(adv_x, 0, 1)
+
     return adv_x
 
 
