@@ -4,7 +4,7 @@ import keras.backend as K
 import cPickle as pickle
 import os
 from mnist import data_mnist, set_mnist_flags, load_model
-from fgs import symbolic_fgs, iter_fgs
+from fgs import symbolic_fgs, iter_fgs, symbolic_fg
 from carlini import CarliniLi
 from attack_utils import gen_grad
 from tf_utils import tf_test_error_rate, batch_eval
@@ -61,8 +61,10 @@ def main(attack, src_model_name, target_model_names):
     grad = gen_grad(x, logits, y)
 
     # FGSM and RAND+FGSM one-shot attack
-    if attack in ["fgs", "rand_fgs"]:
+    if attack in ["fgs", "rand_fgs"] and args.norm is 'inf':
         adv_x = symbolic_fgs(x, grad, eps=eps)
+    elif attack in ["fgs", "rand_fgs"] and args.norm is 'two':
+        adv_x = symbolic_fg(x, grad, eps=eps)
 
     # iterative FGSM
     if attack == "ifgs":
@@ -142,6 +144,8 @@ if __name__ == "__main__":
                         help="Iterated FGS steps")
     parser.add_argument("--kappa", type=float, default=100,
                         help="CW attack confidence")
+    parser.add_argument("--norm", type=str, default='inf',
+                        help="Norm to use for attack")
 
     args = parser.parse_args()
     main(args.attack, args.src_model, args.target_models)
