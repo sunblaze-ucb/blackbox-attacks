@@ -62,9 +62,9 @@ def main(attack, src_model_name, target_model_names):
     grad = gen_grad(x, logits, y)
 
     # FGSM and RAND+FGSM one-shot attack
-    if attack in ["fgs", "rand_fgs"] and args.norm is 'inf':
+    if attack in ["fgs", "rand_fgs"] and args.norm == 'inf':
         adv_x = symbolic_fgs(x, grad, eps=eps)
-    elif attack in ["fgs", "rand_fgs"] and args.norm is 'two':
+    elif attack in ["fgs", "rand_fgs"] and args.norm == 'two':
         adv_x = symbolic_fg(x, grad, eps=eps)
 
     # iterative FGSM

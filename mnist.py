@@ -150,13 +150,27 @@ def modelD():
     model.add(Dense(FLAGS.NUM_CLASSES))
     return model
 
+def modelE():
+    model = Sequential()
+
+    model.add(Flatten(input_shape=(FLAGS.IMAGE_ROWS,
+                                   FLAGS.IMAGE_COLS,
+                                   FLAGS.NUM_CHANNELS)))
+
+    model.add(Dense(100, activation='relu'))
+    model.add(Dense(100, activation='relu'))
+	
+    model.add(Dense(FLAGS.NUM_CLASSES))
+
+    return model
+
 
 def model_mnist(type=1):
     """
     Defines MNIST model using Keras sequential model
     """
 
-    models = [modelA, modelB, modelC, modelD]
+    models = [modelA, modelB, modelC, modelD, modelE]
 
     return models[type]()
 
