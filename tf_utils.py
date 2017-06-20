@@ -56,7 +56,7 @@ def batch_eval(tf_inputs, tf_outputs, numpy_inputs):
     return out
 
 
-def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None):
+def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None, cross_lip=None):
     old_vars = set(tf.all_variables())
     train_size = Y_train.shape[0]
 
@@ -71,6 +71,9 @@ def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None):
         logits_adv = model(tf.stack(x_advs)[idx])
         l2 = gen_adv_loss(logits_adv, y, mean=True)
         loss = 0.5*(l1+l2)
+    elif cross_lip is not None:
+        logit_grad = K.gradients(logits, [x])
+        print logit_grad
     else:
         l2 = tf.constant(0)
         loss = l1
@@ -94,7 +97,7 @@ def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None):
             k = FLAGS.BATCH_SIZE - len(batch_data)
             batch_data = np.concatenate([batch_data, X_train[0:k]])
             batch_labels = np.concatenate([batch_labels, Y_train[0:k]])
-        
+
         feed_dict = {x: batch_data,
                      y: batch_labels,
                      K.learning_phase(): 1}

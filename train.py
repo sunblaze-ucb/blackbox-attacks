@@ -1,4 +1,3 @@
-
 import keras
 from keras import backend as K
 from tensorflow.python.platform import flags
@@ -36,7 +35,7 @@ def main(model_name, model_type):
         model = model_mnist(type=model_type)
 
         # Train an MNIST model
-        tf_train(x, y, model, X_train, Y_train, data_gen)
+        tf_train(x, y, model, X_train, Y_train, data_gen, None, 1)
 
         # Finally print the result!
         test_error = tf_test_error_rate(model, x, X_test, Y_test)
