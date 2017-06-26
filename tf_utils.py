@@ -3,12 +3,13 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 from attack_utils import gen_adv_loss
+from keras.models import save_model
 
 import time
 import sys
 
 FLAGS = flags.FLAGS
-EVAL_FREQUENCY = 100
+EVAL_FREQUENCY = 1000
 
 
 def batch_eval(tf_inputs, tf_outputs, numpy_inputs):
@@ -56,12 +57,13 @@ def batch_eval(tf_inputs, tf_outputs, numpy_inputs):
     return out
 
 
-def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None, cross_lip=None):
+def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None, benign = None, cross_lip=None):
     old_vars = set(tf.all_variables())
     train_size = Y_train.shape[0]
 
     # Generate cross-entropy loss for training
     logits = model(x)
+    #print(K.int_shape(logits))
     preds = K.softmax(logits)
     l1 = gen_adv_loss(logits, y, mean=True)
 
@@ -70,15 +72,35 @@ def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None, cross_lip=No
         idx = tf.placeholder(dtype=np.int32)
         logits_adv = model(tf.stack(x_advs)[idx])
         l2 = gen_adv_loss(logits_adv, y, mean=True)
-        loss = 0.5*(l1+l2)
+        if benign == 0:
+            loss = l2
+        elif benign == 1:
+            loss = 0.5*(l1+l2)
     elif cross_lip is not None:
-        logit_grad = K.gradients(logits, [x])
-        print logit_grad
+        logit_grad = K.gradients(logits, [x])[1]
+	print K.int_shape(logit_grad)
+	l3 = tf.zeros([])
+	for i in range(10):
+	    logit_slice = tf.slice(logits, [0,i], [1,1])
+	   # print(K.int_shape(logit_slice))
+	    logit_loss = tf.reshape(logit_slice,[1])
+	    #print(K.int_shape(logit_loss))
+	    logit_slice_grad = K.gradients(logit_loss, [x])[0]
+	    #print(K.int_shape(logit_slice_grad))
+	    l3 = tf.add(l3, tf.reduce_sum(tf.square(logit_slice_grad)))
+	l3 = K.mean(l3)
+	logit_grad_norm = tf.reduce_sum(tf.square(logit_grad))
+	l2 = K.mean(logit_grad_norm)
+	loss = l1 + 10e-5 * l2
     else:
         l2 = tf.constant(0)
         loss = l1
 
+    #return
+
     optimizer = tf.train.AdamOptimizer().minimize(loss)
+
+    # saver = tf.train.Saver(set(tf.all_variables()) - old_vars)
 
     # Run all the initializers to prepare the trainable parameters.
     K.get_session().run(tf.initialize_variables(
@@ -90,6 +112,9 @@ def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None, cross_lip=No
     num_steps = int(FLAGS.NUM_EPOCHS * train_size + FLAGS.BATCH_SIZE - 1) // FLAGS.BATCH_SIZE
 
     step = 0
+    training_loss = 0
+    epoch_count = 0
+    step_old = 0
     for (batch_data, batch_labels) \
             in generator.flow(X_train, Y_train, batch_size=FLAGS.BATCH_SIZE):
 
@@ -112,16 +137,50 @@ def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None, cross_lip=No
             K.get_session().run([optimizer, loss, l1, l2, preds]
                                 + [model.updates],
                                 feed_dict=feed_dict)
+        training_loss += curr_loss
 
-        if step % EVAL_FREQUENCY == 0:
+        epoch = float(step) * FLAGS.BATCH_SIZE / train_size
+        if epoch >= epoch_count:
+            epoch_count += 1
             elapsed_time = time.time() - start_time
             start_time = time.time()
             print('Step %d (epoch %.2f), %.2f s' %
                 (step, float(step) * FLAGS.BATCH_SIZE / train_size,
                  elapsed_time))
+            print('Training loss: %.3f' % (training_loss/(step - step_old)))
+            training_loss = 0
+            step_old = step
             print('Minibatch loss: %.3f (%.3f, %.3f)' % (curr_loss, curr_l1, curr_l2))
 
             print('Minibatch error: %.1f%%' % error_rate(curr_preds, batch_labels))
+
+        # if step % EVAL_FREQUENCY == 0:
+        #     elapsed_time = time.time() - start_time
+        #     start_time = time.time()
+        #     print('Step %d (epoch %.2f), %.2f s' %
+        #         (step, float(step) * FLAGS.BATCH_SIZE / train_size,
+        #          elapsed_time))
+            # print('Minibatch loss: %.3f (%.3f, %.3f)' % (curr_loss, curr_l1, curr_l2))
+            #
+            # print('Minibatch error: %.1f%%' % error_rate(curr_preds, batch_labels))
+
+            # # save_path = saver.save(K.get_session(), "~/blackbox-attacks/tmp/model.ckpt")
+            # save_model(model, 'tmp/model.ckpt')
+            # print("Model saved in file: %s" % 'model.ckpt')
+            # for (val_data, val_labels) in generator.flow(X_train, Y_train, batch_size=50000):
+            #             if len(batch_data) < FLAGS.BATCH_SIZE:
+            #                 k = FLAGS.BATCH_SIZE - len(batch_data)
+            #                 batch_data = np.concatenate([batch_data, X_train[0:k]])
+            #                 batch_labels = np.concatenate([batch_labels, Y_train[0:k]])
+            #     val_dict = {x: val_data,
+            #                 y: val_labels,
+            #                 K.learning_phase(): 0}
+            # val_loss, val_preds = K.get_session().run([loss, preds], feed_dict=val_dict)
+
+
+            # print('Training error: %.1f%%' % error_rate(val_preds, Y_train))
+                # break
+
 
             sys.stdout.flush()
 

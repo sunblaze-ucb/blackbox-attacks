@@ -16,7 +16,7 @@ def main(model_name, model_type):
     assert keras.backend.backend() == "tensorflow"
     set_mnist_flags()
 
-    with tf.device('/gpu:5'):
+    with tf.device('/gpu:0'):
         flags.DEFINE_bool('NUM_EPOCHS', args.epochs, 'Number of epochs')
 
         # Get MNIST test data
@@ -34,12 +34,15 @@ def main(model_name, model_type):
 
         model = model_mnist(type=model_type)
 
+        print(model.summary())
+
         # Train an MNIST model
-        tf_train(x, y, model, X_train, Y_train, data_gen, None, 1)
+        tf_train(x, y, model, X_train, Y_train, data_gen, None, None)
 
         # Finally print the result!
         test_error = tf_test_error_rate(model, x, X_test, Y_test)
         print('Test error: %.1f%%' % test_error)
+        model_name += '_cross_lip'
         save_model(model, model_name)
         json_string = model.to_json()
         with open(model_name+'.json', 'wr') as f:

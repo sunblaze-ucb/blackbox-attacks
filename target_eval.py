@@ -4,8 +4,8 @@ import keras.backend as K
 import cPickle as pickle
 import os
 from mnist import data_mnist, set_mnist_flags, load_model
-from fgs import symbolic_fgs, iter_fgs
-from carlini import CarliniLi
+from fgs import symbolic_fgs, iter_fgs, symbolic_fg
+from carlini_li import CarliniLi 
 from attack_utils import gen_grad
 from tf_utils import tf_test_error_rate, batch_eval
 from os.path import basename
@@ -31,8 +31,9 @@ def main(attack, target_model_name, source_model_names):
     _, _, X_test, Y_test = data_mnist()
 
     # source model for crafting adversarial examples
-    source_models = [None] * len(source_model_names)
-    for i in range(len(source_model_names)):
+    source_model_names.insert(0, target_model_name)
+    source_models = [None] * (len(source_model_names))
+    for i in range(len(source_models)):
 	    source_models[i] = load_model(source_model_names[i])
 
     # model(s) to target
@@ -48,8 +49,8 @@ def main(attack, target_model_name, source_model_names):
             print '{}: {:.1f}'.format(basename(name), err)
         return
 
-    eps_list = list(np.linspace(0.1,1.0,5))
-    eps_list.extend(np.linspace(2.0,5.0,4))
+    eps_list = list(np.linspace(0.01,0.1,5))
+    eps_list.extend(np.linspace(0.2,0.5,4))
 
     print(eps_list)
 
@@ -61,7 +62,7 @@ def main(attack, target_model_name, source_model_names):
                 0.0, 1.0)
             eps -= args.alpha
 
-        for i in range(len(source_models)):
+        for i in range(1,len(source_models)):
             src_model = source_models[i]
             src_model_name = source_model_names[i]
             logits = src_model(x)
@@ -87,10 +88,11 @@ def main(attack, target_model_name, source_model_names):
                     X_adv = pickle.load(open(pickle_name,'rb'))
                     ofile = open('CW_attack_success.txt','a')
 
-                    err = tf_test_error_rate(src_model, x, X_adv, Y_test)
-                    print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
-                    ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
+                    #err = tf_test_error_rate(src_model, x, X_adv, Y_test)
+                    #print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
+                    #ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
                     err = tf_test_error_rate(target_model, x, X_adv, Y_test)
+                    print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
                     print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
                     ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
                     ofile.close()
@@ -109,9 +111,9 @@ def main(attack, target_model_name, source_model_names):
 
                 ofile = open('CW_attack_success.txt','a')
 
-                err = tf_test_error_rate(src_model, x, X_adv, Y_test)
-                print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
-                ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
+               # err = tf_test_error_rate(src_model, x, X_adv, Y_test)
+               # print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
+               # ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
                 err = tf_test_error_rate(target_model, x, X_adv, Y_test)
                 print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
                 ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
@@ -123,10 +125,10 @@ def main(attack, target_model_name, source_model_names):
             X_adv = batch_eval([x, y], [adv_x], [X_test, Y_test])[0]
 
             # white-box attack
-            err = tf_test_error_rate(src_model, x, X_adv, Y_test)
-            print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
+           # err = tf_test_error_rate(src_model, x, X_adv, Y_test)
+           # print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
 
-            # black-box attack
+            # first run is white-box, then black-box attacks
             err = tf_test_error_rate(target_model, x, X_adv, Y_test)
             print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
 
@@ -151,4 +153,3 @@ if __name__ == "__main__":
                         help="Norm to use for attack")
 
     args = parser.parse_args()
-    main(args.attack, args.target_model, args.source_models)

@@ -31,10 +31,19 @@ def data_mnist(one_hot=True):
     # the data, shuffled and split between train and test sets
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
+    y_train = y_train
+    # y_val = y_train[-10000:]
+
+
     X_train = X_train.reshape(X_train.shape[0],
                               FLAGS.IMAGE_ROWS,
                               FLAGS.IMAGE_COLS,
                               FLAGS.NUM_CHANNELS)
+
+    # X_val = X_train[-10000:].reshape(10000,
+    #                           FLAGS.IMAGE_ROWS,
+    #                           FLAGS.IMAGE_COLS,
+    #                           FLAGS.NUM_CHANNELS)
 
     X_test = X_test.reshape(X_test.shape[0],
                             FLAGS.IMAGE_ROWS,
@@ -43,11 +52,13 @@ def data_mnist(one_hot=True):
 
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
+    # X_val = X_val.astype('float32')
     X_train /= 255
     X_test /= 255
     print('X_train shape:', X_train.shape)
     print(X_train.shape[0], 'train samples')
     print(X_test.shape[0], 'test samples')
+    # print(X_val.shape[0], 'validation samples')
 
     print "Loaded MNIST test data."
 
@@ -55,6 +66,7 @@ def data_mnist(one_hot=True):
         # convert class vectors to binary class matrices
         y_train = np_utils.to_categorical(y_train, FLAGS.NUM_CLASSES).astype(np.float32)
         y_test = np_utils.to_categorical(y_test, FLAGS.NUM_CLASSES).astype(np.float32)
+        # y_val = np_utils.to_categorical(y_val, FLAGS.NUM_CLASSES).astype(np.float32)
 
     return X_train, y_train, X_test, y_test
 
@@ -159,10 +171,36 @@ def modelE():
 
     model.add(Dense(100, activation='relu'))
     model.add(Dense(100, activation='relu'))
-	
+
     model.add(Dense(FLAGS.NUM_CLASSES))
 
     return model
+
+def modelF():
+    model = Sequential()
+
+    model.add(Convolution2D(32, 3, 3,
+                            border_mode='valid',
+                            input_shape=(FLAGS.IMAGE_ROWS,
+                                         FLAGS.IMAGE_COLS,
+                                         FLAGS.NUM_CHANNELS)))
+    model.add(Activation('relu'))
+
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Convolution2D(64, 3, 3))
+    model.add(Activation('relu'))
+
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Flatten())
+    model.add(Dense(1024))
+    model.add(Activation('relu'))
+
+    model.add(Dense(FLAGS.NUM_CLASSES))
+
+    return model
+
 
 
 def model_mnist(type=1):
@@ -170,7 +208,7 @@ def model_mnist(type=1):
     Defines MNIST model using Keras sequential model
     """
 
-    models = [modelA, modelB, modelC, modelD, modelE]
+    models = [modelA, modelB, modelC, modelD, modelE, modelF]
 
     return models[type]()
 

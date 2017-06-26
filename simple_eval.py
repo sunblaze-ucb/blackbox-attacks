@@ -69,7 +69,7 @@ def main(attack, src_model_name, target_model_names):
 
     # iterative FGSM
     if attack == "ifgs":
-        adv_x = iter_fgs(src_model, x, y, steps=args.steps, eps=args.eps/args.steps)
+        adv_x = iter_fgs(src_model, x, y, steps=args.steps, alpha = 0.01, eps=args.eps)
 
     # Carlini & Wagner attack
     if attack == "CW":
@@ -103,7 +103,7 @@ def main(attack, src_model_name, target_model_names):
         X_adv = X_test + r
 	time2 = time()
 	print("Run with Adam took {}s".format(time2-time1))
-	
+
         pickle.dump(X_adv, open(pickle_name,'wb'))
 
 	ofile = open('CW_attack_success.txt','a')
