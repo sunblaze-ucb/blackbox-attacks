@@ -1,2 +1,5 @@
 *.pyc
 *.out
+resnet/logs/*
+resnet/cifar10/*
+*.bin
