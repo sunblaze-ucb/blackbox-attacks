@@ -129,3 +129,43 @@ plot 'output_data/modelC_to_modelB_adv_0.3_linf_iter_nob.txt' u 1:2:(sprintf("%.
 'output_data/modelC_to_modelB_adv_0.3_linf_iter_nob.txt' u 1:2 with lines ls 2 title columnheader(1)
 
 unset output
+
+set output "plots/models_to_modelF_adv_0.3_linf_iter.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title 'Black-box adversarial success using FGS samples from Models A, B, C, D'
+
+plot 'output_data/modelA_to_modelF_adv_0.3_linf_iter.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelA_to_modelF_adv_0.3_linf_iter.txt' u 1:2 with lines ls 1 title 'Model A', \
+'output_data/modelB_to_modelF_adv_0.3_linf_iter.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelB_to_modelF_adv_0.3_linf_iter.txt' u 1:2 with lines ls 2 title 'Model B', \
+'output_data/modelC_to_modelF_adv_0.3_linf_iter.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelC_to_modelF_adv_0.3_linf_iter.txt' u 1:2 with lines ls 3 title 'Model C', \
+'output_data/modelD_to_modelF_adv_0.3_linf_iter.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelD_to_modelF_adv_0.3_linf_iter.txt' u 1:2 with lines ls 4 title 'Model D'
+unset output
+
+set output "plots/models_to_modelF_adv_0.3_linf_iter_nob.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title 'Black-box adversarial success using FGS samples from Models A, B, C, D'
+
+plot 'output_data/modelA_to_modelF_adv_0.3_linf_iter_nob.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelA_to_modelF_adv_0.3_linf_iter_nob.txt' u 1:2 with lines ls 1 title 'Model A', \
+'output_data/modelB_to_modelF_adv_0.3_linf_iter_nob.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelB_to_modelF_adv_0.3_linf_iter_nob.txt' u 1:2 with lines ls 2 title 'Model B', \
+'output_data/modelC_to_modelF_adv_0.3_linf_iter_nob.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelC_to_modelF_adv_0.3_linf_iter_nob.txt' u 1:2 with lines ls 3 title 'Model C', \
+'output_data/modelD_to_modelF_adv_0.3_linf_iter_nob.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelD_to_modelF_adv_0.3_linf_iter_nob.txt' u 1:2 with lines ls 4 title 'Model D'
+unset output
