@@ -32,7 +32,7 @@ from tensorflow.python.training import moving_averages
 HParams = namedtuple('HParams',
                      'batch_size, num_classes, min_lrn_rate, lrn_rate, '
                      'num_residual_units, wide_flag, use_bottleneck, weight_decay_rate, '
-                     'relu_leakiness, optimizer')
+                     'relu_leakiness, adv_only, optimizer')
 
 
 class ResNet(object):
@@ -67,7 +67,10 @@ class ResNet(object):
       adv_images = tf.stop_gradient(self._images + scaled_signed_grad)
       self._build_model(adv_images, 'adv', True)
       self._define_adv_cost()
-      self.cost = 0.5*(self.ben_cost + self.adv_cost)
+      if self.hps.adv_only == False:
+        self.cost = 0.5*(self.ben_cost + self.adv_cost)
+      elif self.hps.adv_only == True:
+        self.cost = self.adv_cost
     else:
       self.adv_cost = tf.constant(0)
       self.cost = self.ben_cost

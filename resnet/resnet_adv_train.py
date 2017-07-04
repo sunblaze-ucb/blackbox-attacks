@@ -32,21 +32,12 @@ def train(hps, batch_size):
   images, orig_images, labels = cifar_input.build_input(
       FLAGS.dataset, FLAGS.train_data_path, hps.batch_size, FLAGS.mode)
 
-  N0, H0, W0, C0 = images.get_shape().as_list()
-  N1, L1 = labels.get_shape().as_list()
-
-  print('{}, {}'.format(N1, L1))
-
-  eps_num = args.eps
-  eps = eps_num/255.
-  print('{}'.format(eps))
-  # eps = None
-
-  # X = tf.placeholder(shape=(N0, H0, W0, C0), dtype=tf.float32)
-  # Y = tf.placeholder(shape=(N1, L1), dtype=tf.float32)
-  #
-  # # x = tf.Variable(X, dtype=tf.float32)
-  # x_scaled = tf.map_fn(lambda img: tf.image.per_image_standardization(img), X)
+  if args.eps is not None:
+    eps_num = args.eps
+    eps = eps_num/255.
+    print('{}'.format(eps))
+  else:
+    eps = args.eps
 
   model = resnet_model.ResNet(hps, images, labels, FLAGS.mode, eps)
   # model = cifar10_model.ConvNet(hps, images, labels, FLAGS.mode, eps)
@@ -78,8 +69,11 @@ def train(hps, batch_size):
                'adv_loss': model.adv_cost,
                'precision': precision},
       every_n_iter=100)
+
   stop_hook = tf.train.StopAtStepHook(last_step=80000)
 
+  saver = tf.train.Saver(max_to_keep=10)
+  checkpoint_hook = tf.train.CheckpointSaverHook(checkpoint_dir=log_root, saver=saver, save_steps = 10000)
   class _LearningRateSetterHook(tf.train.SessionRunHook):
     """Sets learning_rate based on global step."""
 
@@ -106,9 +100,10 @@ def train(hps, batch_size):
       checkpoint_dir=log_root,
       hooks=[logging_hook],
     #   _LearningRateSetterHook()],
-      chief_only_hooks=[summary_hook, stop_hook],
+      chief_only_hooks=[checkpoint_hook, summary_hook, stop_hook],
       # Since we provide a SummarySaverHook, we need to disable default
       # SummarySaverHook. To do that we set save_summaries_steps to 0.
+      save_checkpoint_secs=None,
       save_summaries_steps=0,
       config=tf.ConfigProto(allow_soft_placement=True)) as mon_sess:
     while not mon_sess.should_stop():
@@ -133,10 +128,11 @@ def main():
                              min_lrn_rate=0.0001,
                              lrn_rate=0.1,
                              num_residual_units=residual_count,
-                             wide_flag=wide_flag
+                             wide_flag=wide_flag,
                              use_bottleneck=False,
                              weight_decay_rate=0.0002,
                              relu_leakiness=0.1,
+                             adv_only=True,
                              optimizer='mom')
 
     # hps = cifar10_model.HParams(batch_size=batch_size,
@@ -150,7 +146,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('target_model', type=str,
                         help='name of target model')
-    parser.add_argument("--eps", type=int, default=8,
+    parser.add_argument("--eps", type=int, default=None,
                         help="FGS attack scale")
 
     args = parser.parse_args()
