@@ -21,7 +21,7 @@ def main(attack, target_model_name, source_model_names):
     tf.set_random_seed(0)
 
     flags.DEFINE_integer('BATCH_SIZE', 10, 'Size of batches')
-    flags.DEFINE_integer('IMAGE_NUM', 1, 'Number of images to print')
+    flags.DEFINE_integer('IMAGE_NUM', 0, 'Number of images to print')
     set_mnist_flags()
 
     x = K.placeholder((None,
@@ -42,6 +42,8 @@ def main(attack, target_model_name, source_model_names):
     # model(s) to target
     target_model = load_model(target_model_name)
 
+    print(target_model.summary())
+
     # simply compute test error
     if attack == "test":
         err = tf_test_error_rate(target_model, x, X_test, Y_test)
@@ -55,6 +57,9 @@ def main(attack, target_model_name, source_model_names):
     eps_list = list(np.linspace(0.00,0.1,5))
     eps_list.extend(np.linspace(0.2,0.5,4))
 
+    if args.eps is not None:
+        eps_list = [args.eps]
+
     print(eps_list)
 
     for i in range(1,len(source_models)):
@@ -63,11 +68,8 @@ def main(attack, target_model_name, source_model_names):
         logits = src_model(x)
         grad = gen_grad(x, logits, y)
 
-        rel_path_f = 'output_data/'+ basename(src_model_name)+'_to_'+basename(target_model_name)+'.txt'
-        abs_path_f = os.path.join(script_dir, rel_path_f)
-
         ofile = open('output_data/'+basename(src_model_name)+'_to_'+basename(target_model_name)+'.txt', 'a')
-        ofile.write(attack+'\n')
+        ofile.write(basename(target_model_name)+'\n')
         for eps in eps_list:
             # take the random step in the RAND+FGSM
             if attack == "rand_fgs":
@@ -88,13 +90,13 @@ def main(attack, target_model_name, source_model_names):
 
             # Carlini & Wagner attack
             if attack == "CW":
+                ofile = open('output_data/CW_attack_success.txt','a')
                 l = 1000
                 pickle_name = 'CW_adv_samples/' + basename(src_model_name) +'_adv_'+str(eps)+'.p'
                 Y_test = Y_test[0:l]
                 if os.path.exists(pickle_name):
                     print 'Loading adversarial samples'
                     X_adv = pickle.load(open(pickle_name,'rb'))
-                    ofile = open('CW_attack_success.txt','a')
 
                     #err = tf_test_error_rate(src_model, x, X_adv, Y_test)
                     #print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
@@ -103,7 +105,6 @@ def main(attack, target_model_name, source_model_names):
                     print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
                     print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
                     ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
-                    ofile.close()
                     continue
 
                 X_test = X_test[0:l]
@@ -117,20 +118,18 @@ def main(attack, target_model_name, source_model_names):
                 X_adv = X_test + r
                 pickle.dump(X_adv, open(pickle_name,'wb'))
 
-                ofile = open('CW_attack_success.txt','a')
-
                # err = tf_test_error_rate(src_model, x, X_adv, Y_test)
                # print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
                # ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
                 err = tf_test_error_rate(target_model, x, X_adv, Y_test)
                 print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
-                ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
-                ofile.close()
+                ofile.write('{} {:.2f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
 
                 continue
 
             # compute the adversarial examples and evaluate
             X_adv = batch_eval([x, y], [adv_x], [X_test, Y_test])[0]
+            # print(X_adv.shape())
 
             rel_path_i = 'images/'
             abs_path_i = os.path.join(script_dir, rel_path_i)
@@ -142,8 +141,8 @@ def main(attack, target_model_name, source_model_names):
             # first run is white-box, then black-box attacks
             err = tf_test_error_rate(target_model, x, X_adv, Y_test)
             print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
-            ofile.write('{}, {:.2f} \n'.format(eps, err))
-        ofile.close()
+            ofile.write('{} {:.2f} \n'.format(eps, err))
+    ofile.close()
 
 
 if __name__ == "__main__":
@@ -154,8 +153,8 @@ if __name__ == "__main__":
     parser.add_argument("target_model", help="target model for attack")
     parser.add_argument('source_models', nargs='*',
                             help='path to source model(s)')
-   # parser.add_argument("--eps", type=float, default=0.3,
-   #                     help="FGS attack scale")
+    parser.add_argument("--eps", type=float, default=None,
+                       help="FGS attack scale")
     parser.add_argument("--alpha", type=float, default=0.05,
                         help="RAND+FGSM random perturbation scale")
     parser.add_argument("--steps", type=int, default=10,
