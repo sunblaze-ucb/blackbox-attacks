@@ -38,7 +38,7 @@ HParams = namedtuple('HParams',
 class ResNet(object):
   """ResNet model."""
 
-  def __init__(self, hps, images, labels, mode):
+  def __init__(self, hps, images, labels, mode, eps = None):
     """ResNet constructor.
 
     Args:
@@ -51,13 +51,28 @@ class ResNet(object):
     self._images = images
     self.labels = labels
     self.mode = mode
+    self.eps = eps
 
     self._extra_train_ops = []
 
   def build_graph(self):
     """Build a whole graph for the model."""
     self.global_step = tf.contrib.framework.get_or_create_global_step()
-    self._build_model()
+    self._build_model(self._images)
+    self._define_ben_cost()
+    if self.eps is not None:
+      grad, = tf.gradients(self.ben_cost, self._images)
+      signed_grad = tf.sign(grad)
+      scaled_signed_grad = self.eps * signed_grad
+      adv_images = tf.stop_gradient(self._images + scaled_signed_grad)
+      self._build_model(adv_images, 'adv', True)
+      self._define_adv_cost()
+      self.cost = 0.5*(self.ben_cost + self.adv_cost)
+      tf.summary.scalar('cost', self.cost)
+    else:
+      self.cost = self.ben_cost
+      tf.summary.scalar('cost', self.cost)
+
     if self.mode == 'train':
       self._build_train_op()
     self.summaries = tf.summary.merge_all()
@@ -66,10 +81,11 @@ class ResNet(object):
     """Map a stride scalar to the stride array for tf.nn.conv2d."""
     return [1, stride, stride, 1]
 
-  def _build_model(self):
+  def _build_model(self, input_var, adv=None, reuse=False):
     """Build the core model within the graph."""
-    with tf.variable_scope('init'):
-      x = self._images
+    with tf.variable_scope('init', reuse=reuse):
+    #   x = self._images
+      x = input_var
       x = self._conv('init_conv', x, 3, 3, 16, self._stride_arr(1))
 
     strides = [1, 2, 2]
@@ -79,53 +95,75 @@ class ResNet(object):
       filters = [16, 64, 128, 256]
     else:
       res_func = self._residual
-      filters = [16, 16, 32, 64]
+    #   filters = [16, 16, 32, 64]
       # Uncomment the following codes to use w28-10 wide residual network.
       # It is more memory efficient than very deep residual network and has
       # comparably good performance.
       # https://arxiv.org/pdf/1605.07146v1.pdf
-      # filters = [16, 160, 320, 640]
+      filters = [16, 160, 320, 640]
       # Update hps.num_residual_units to 4
 
-    with tf.variable_scope('unit_1_0'):
+    with tf.variable_scope('unit_1_0', reuse=reuse):
       x = res_func(x, filters[0], filters[1], self._stride_arr(strides[0]),
                    activate_before_residual[0])
     for i in six.moves.range(1, self.hps.num_residual_units):
-      with tf.variable_scope('unit_1_%d' % i):
+      with tf.variable_scope('unit_1_%d' % i, reuse=reuse):
         x = res_func(x, filters[1], filters[1], self._stride_arr(1), False)
 
-    with tf.variable_scope('unit_2_0'):
+    with tf.variable_scope('unit_2_0',reuse=reuse):
       x = res_func(x, filters[1], filters[2], self._stride_arr(strides[1]),
                    activate_before_residual[1])
     for i in six.moves.range(1, self.hps.num_residual_units):
-      with tf.variable_scope('unit_2_%d' % i):
+      with tf.variable_scope('unit_2_%d' % i, reuse=reuse):
         x = res_func(x, filters[2], filters[2], self._stride_arr(1), False)
 
-    with tf.variable_scope('unit_3_0'):
+    with tf.variable_scope('unit_3_0',reuse=reuse):
       x = res_func(x, filters[2], filters[3], self._stride_arr(strides[2]),
                    activate_before_residual[2])
     for i in six.moves.range(1, self.hps.num_residual_units):
-      with tf.variable_scope('unit_3_%d' % i):
+      with tf.variable_scope('unit_3_%d' % i, reuse=reuse):
         x = res_func(x, filters[3], filters[3], self._stride_arr(1), False)
 
-    with tf.variable_scope('unit_last'):
+    with tf.variable_scope('unit_last',reuse=reuse):
       x = self._batch_norm('final_bn', x)
       x = self._relu(x, self.hps.relu_leakiness)
       x = self._global_avg_pool(x)
 
-    with tf.variable_scope('logit'):
+    with tf.variable_scope('logit',reuse=reuse):
       logits = self._fully_connected(x, self.hps.num_classes)
-      self.logits = logits
-      self.predictions = tf.nn.softmax(logits)
+      if adv is not None:
+          self.adv_logits = logits
+          self.adv_predictions = tf.nn.softmax(logits)
+      else:
+          self.logits = logits
+          self.predictions = tf.nn.softmax(logits)
 
-    with tf.variable_scope('costs'):
-      xent = tf.nn.softmax_cross_entropy_with_logits(
-          logits=logits, labels=self.labels)
-      self.cost = tf.reduce_mean(xent, name='xent')
-      self.test_cost = tf.reduce_mean(xent, name='xent')
-      self.cost += self._decay()
+    # with tf.variable_scope('costs'):
+    #   xent = tf.nn.softmax_cross_entropy_with_logits(
+    #       logits=logits, labels=self.labels)
+    #   self.cost = tf.reduce_mean(xent, name='xent')
+    #   self.test_cost = tf.reduce_mean(xent, name='xent')
+    #   self.cost += self._decay()
+    #   if self.eps is not None:
+    #       grad, = tf.gradients(self.test_cost, self._images)
+    #       signed_grad = tf.sign(grad)
+    #       scaled_signed_grad = self.eps * signed_grad
+    #       adv_X = tf.stop_gradient(X + scaled_signed_grad)
 
-      tf.summary.scalar('cost', self.cost)
+    #   tf.summary.scalar('cost', self.cost)
+  def _define_ben_cost(self):
+    xent = tf.nn.softmax_cross_entropy_with_logits(
+        logits=self.logits, labels=self.labels)
+    self.ben_cost = tf.reduce_mean(xent, name='xent')
+    self.test_cost = tf.reduce_mean(xent, name='xent')
+    self.ben_cost += self._decay()
+    # tf.summary.scalar('cost', self.cost)
+
+  def _define_adv_cost(self):
+    #TODO: Correct for label leaking here
+    xent_adv = tf.nn.softmax_cross_entropy_with_logits(
+        logits=self.adv_logits, labels=self.labels)
+    self.adv_cost = tf.reduce_mean(xent_adv, name='xent_adv')
 
   def _build_train_op(self):
     """Build training specific ops for the graph."""

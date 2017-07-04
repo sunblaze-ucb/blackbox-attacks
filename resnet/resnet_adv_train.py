@@ -3,11 +3,13 @@
 import time
 import six
 import sys
+import os
 
 import cifar_input
 import numpy as np
 import resnet_model
 import tensorflow as tf
+import cifar10_model
 from tensorflow.python.platform import flags
 
 FLAGS = tf.flags.FLAGS
@@ -15,19 +17,38 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', 'train', 'Train or evaluate')
 tf.flags.DEFINE_string('dataset', 'cifar10', 'cifar10 or cifar100.')
 tf.flags.DEFINE_string('train_data_path', 'cifar10/data_batch*', 'Filepattern for training data.')
-tf.flags.DEFINE_string('log_root', 'logs',
-                           'Directory to keep the checkpoints. Should be a '
-                           'parent directory of FLAGS.train_dir/eval_dir.')
+# tf.flags.DEFINE_string('log_root', 'logs_trial',
+#                            'Directory to keep the checkpoints. Should be a '
+#                            'parent directory of FLAGS.train_dir/eval_dir.')
 tf.flags.DEFINE_integer('image_size', 32, 'Image side length.')
-tf.flags.DEFINE_string('train_dir', 'logs/train',
-                           'Directory to keep training outputs.')
+# tf.flags.DEFINE_string('train_dir', 'logs_trial/train',
+                        #    'Directory to keep training outputs.')
 
 
-def train(hps):
+def train(hps, batch_size):
   """Training loop."""
-  images, labels = cifar_input.build_input(
+  script_dir = os.path.dirname(__file__)
+
+  images, orig_images, labels = cifar_input.build_input(
       FLAGS.dataset, FLAGS.train_data_path, hps.batch_size, FLAGS.mode)
-  model = resnet_model.ResNet(hps, images, labels, FLAGS.mode)
+
+  N0, H0, W0, C0 = images.get_shape().as_list()
+  N1, L1 = labels.get_shape().as_list()
+
+  print('{}, {}'.format(N0, N1))
+
+  # eps_num = args.eps
+  # eps = eps_num/255.
+  eps = None
+
+  # X = tf.placeholder(shape=(N0, H0, W0, C0), dtype=tf.float32)
+  # Y = tf.placeholder(shape=(N1, L1), dtype=tf.float32)
+  #
+  # # x = tf.Variable(X, dtype=tf.float32)
+  # x_scaled = tf.map_fn(lambda img: tf.image.per_image_standardization(img), X)
+
+  model = resnet_model.ResNet(hps, images, labels, FLAGS.mode, eps)
+  # model = cifar10_model.ConvNet(hps, images, labels, FLAGS.mode, eps)
   model.build_graph()
 
   param_stats = tf.contrib.tfprof.model_analyzer.print_model_analysis(
@@ -46,7 +67,7 @@ def train(hps):
 
   summary_hook = tf.train.SummarySaverHook(
       save_steps=100,
-      output_dir=FLAGS.train_dir,
+      output_dir=train_dir,
       summary_op=tf.summary.merge([model.summaries,
                                    tf.summary.scalar('Precision', precision)]))
 
@@ -79,8 +100,9 @@ def train(hps):
         self._lrn_rate = 0.0001
 
   with tf.train.MonitoredTrainingSession(
-      checkpoint_dir=FLAGS.log_root,
-      hooks=[logging_hook, _LearningRateSetterHook()],
+      checkpoint_dir=log_root,
+      hooks=[logging_hook],
+    #   _LearningRateSetterHook()],
       chief_only_hooks=[summary_hook],
       # Since we provide a SummarySaverHook, we need to disable default
       # SummarySaverHook. To do that we set save_summaries_steps to 0.
@@ -90,10 +112,7 @@ def train(hps):
       mon_sess.run(model.train_op)
 
 def main():
-    if FLAGS.mode == 'train':
-        batch_size = 128
-    elif FLAGS.mode == 'eval':
-        batch_size = 100
+    batch_size = 128
 
     # Assuming dataset is CIFAR-10
     num_classes = 10
@@ -108,11 +127,22 @@ def main():
                              relu_leakiness=0.1,
                              optimizer='mom')
 
-    if FLAGS.mode == 'train':
-        train(hps)
-    elif FLAGS.mode == 'eval':
-        evaluate(hps)
+    # hps = cifar10_model.HParams(batch_size=batch_size,
+    #                          num_classes=num_classes, optimizer='mom')
+
+    train(hps, batch_size)
 
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('target_model', type=str,
+                        help='name of target model')
+    parser.add_argument("--eps", type=int, default=8,
+                        help="FGS attack scale")
+
+    args = parser.parse_args()
+    log_root = 'logs_'+args.target_model
+    train_dir = log_root+'/train'
+
     main()

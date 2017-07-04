@@ -32,25 +32,19 @@ def evaluate(hps):
   """Eval loop."""
   sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
 
-  images, labels = cifar_input.build_input(
+  images, orig_images, labels = cifar_input.build_input(
       FLAGS.dataset, FLAGS.eval_data_path, hps.batch_size, FLAGS.mode)
   tf.train.start_queue_runners(sess)
 
-  batch_images, batch_labels = sess.run(
-      [images, labels])
+  batch_images, batch_orig_images, batch_labels = sess.run(
+      [images, orig_images, labels])
   np.save(FLAGS.eval_dir + '/batch_images.npy', batch_images)
+  np.save(FLAGS.eval_dir + '/batch_orig_images.npy', batch_orig_images)
   np.save(FLAGS.eval_dir + '/batch_labels.npy', batch_labels)
 
 def main():
-  # if FLAGS.num_gpus == 0:
-  #   dev = '/cpu:0'
-  # elif FLAGS.num_gpus == 1:
-  #   dev = '/gpu:0'
-  # else:
-  #   raise ValueError('Only support 0 or 1 gpu.')
-
   if FLAGS.mode == 'eval':
-    batch_size = 100
+    batch_size = 10000
 
   if FLAGS.dataset == 'cifar10':
     num_classes = 10

@@ -72,31 +72,35 @@ def build_input(dataset, data_path, batch_size, mode):
     # image = tf.image.random_brightness(image, max_delta=63. / 255.)
     # image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
     # image = tf.image.random_contrast(image, lower=0.2, upper=1.8)
+    image = image / 255.
+    orig_image = image
     image = tf.image.per_image_standardization(image)
 
     example_queue = tf.RandomShuffleQueue(
         capacity=16 * batch_size,
         min_after_dequeue=8 * batch_size,
-        dtypes=[tf.float32, tf.int32],
-        shapes=[[image_size, image_size, depth], [1]])
+        dtypes=[tf.float32, tf.float32, tf.int32],
+        shapes=[[image_size, image_size, depth], [image_size, image_size, depth], [1]])
     num_threads = 16
   else:
     image = tf.image.resize_image_with_crop_or_pad(
         image, image_size, image_size)
+    image = image / 255.
+    orig_image = image
     image = tf.image.per_image_standardization(image)
 
     example_queue = tf.FIFOQueue(
         3 * batch_size,
-        dtypes=[tf.float32, tf.int32],
-        shapes=[[image_size, image_size, depth], [1]])
+        dtypes=[tf.float32, tf.float32, tf.int32],
+        shapes=[[image_size, image_size, depth], [image_size, image_size, depth], [1]])
     num_threads = 1
 
-  example_enqueue_op = example_queue.enqueue([image, label])
+  example_enqueue_op = example_queue.enqueue([image, orig_image, label])
   tf.train.add_queue_runner(tf.train.queue_runner.QueueRunner(
       example_queue, [example_enqueue_op] * num_threads))
 
   # Read 'batch' labels + images from the example queue.
-  images, labels = example_queue.dequeue_many(batch_size)
+  images, orig_images, labels = example_queue.dequeue_many(batch_size)
   labels = tf.reshape(labels, [batch_size, 1])
   indices = tf.reshape(tf.range(0, batch_size, 1), [batch_size, 1])
   labels = tf.sparse_to_dense(
@@ -112,4 +116,4 @@ def build_input(dataset, data_path, batch_size, mode):
 
   # Display the training images in the visualizer.
   tf.summary.image('images', images)
-  return images, labels
+  return images, orig_images, labels
