@@ -1,3 +1,13 @@
 modelF_adv_0.3_linf_iter_nob
 modelF_adv_0.3_linf_iter_nob
 modelF_adv_0.3_linf_iter_nob
+modelF_adv_0.3_linf_iter_nob
+0.0 1.13 
+0.025 1.23 
+0.05 1.35 
+0.075 1.48 
+0.1 1.68 
+0.2 2.51 
+0.3 3.75 
+0.4 16.22 
+0.5 51.99 
