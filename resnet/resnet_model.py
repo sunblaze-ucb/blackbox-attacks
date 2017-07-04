@@ -31,7 +31,7 @@ from tensorflow.python.training import moving_averages
 
 HParams = namedtuple('HParams',
                      'batch_size, num_classes, min_lrn_rate, lrn_rate, '
-                     'num_residual_units, use_bottleneck, weight_decay_rate, '
+                     'num_residual_units, wide_flag, use_bottleneck, weight_decay_rate, '
                      'relu_leakiness, optimizer')
 
 
@@ -68,10 +68,12 @@ class ResNet(object):
       self._build_model(adv_images, 'adv', True)
       self._define_adv_cost()
       self.cost = 0.5*(self.ben_cost + self.adv_cost)
-      tf.summary.scalar('cost', self.cost)
     else:
+      self.adv_cost = tf.constant(0)
       self.cost = self.ben_cost
-      tf.summary.scalar('cost', self.cost)
+
+    tf.summary.scalar('adv_cost', self.adv_cost)
+    tf.summary.scalar('cost', self.cost)
 
     if self.mode == 'train':
       self._build_train_op()
@@ -95,12 +97,14 @@ class ResNet(object):
       filters = [16, 64, 128, 256]
     else:
       res_func = self._residual
-    #   filters = [16, 16, 32, 64]
+      if self.hps.wide_flag == False:
+        filters = [16, 16, 32, 64]
+      elif self.hps.wide_flag == True:
       # Uncomment the following codes to use w28-10 wide residual network.
       # It is more memory efficient than very deep residual network and has
       # comparably good performance.
       # https://arxiv.org/pdf/1605.07146v1.pdf
-      filters = [16, 160, 320, 640]
+        filters = [16, 160, 320, 640]
       # Update hps.num_residual_units to 4
 
     with tf.variable_scope('unit_1_0', reuse=reuse):
@@ -134,35 +138,23 @@ class ResNet(object):
       if adv is not None:
           self.adv_logits = logits
           self.adv_predictions = tf.nn.softmax(logits)
+        #   self.adv_labels = tf.argmax(self.adv_predictions, axis=1)
       else:
           self.logits = logits
           self.predictions = tf.nn.softmax(logits)
+          self.predicted_labels = tf.one_hot(tf.reshape(tf.argmax(self.predictions, axis=1),[self.hps.batch_size]),depth=self.hps.num_classes)
 
-    # with tf.variable_scope('costs'):
-    #   xent = tf.nn.softmax_cross_entropy_with_logits(
-    #       logits=logits, labels=self.labels)
-    #   self.cost = tf.reduce_mean(xent, name='xent')
-    #   self.test_cost = tf.reduce_mean(xent, name='xent')
-    #   self.cost += self._decay()
-    #   if self.eps is not None:
-    #       grad, = tf.gradients(self.test_cost, self._images)
-    #       signed_grad = tf.sign(grad)
-    #       scaled_signed_grad = self.eps * signed_grad
-    #       adv_X = tf.stop_gradient(X + scaled_signed_grad)
-
-    #   tf.summary.scalar('cost', self.cost)
   def _define_ben_cost(self):
     xent = tf.nn.softmax_cross_entropy_with_logits(
         logits=self.logits, labels=self.labels)
     self.ben_cost = tf.reduce_mean(xent, name='xent')
     self.test_cost = tf.reduce_mean(xent, name='xent')
     self.ben_cost += self._decay()
-    # tf.summary.scalar('cost', self.cost)
 
   def _define_adv_cost(self):
-    #TODO: Correct for label leaking here
+    # Correcting for label leaking by using model predictions
     xent_adv = tf.nn.softmax_cross_entropy_with_logits(
-        logits=self.adv_logits, labels=self.labels)
+        logits=self.adv_logits, labels=self.predicted_labels)
     self.adv_cost = tf.reduce_mean(xent_adv, name='xent_adv')
 
   def _build_train_op(self):

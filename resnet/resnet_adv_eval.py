@@ -178,11 +178,19 @@ def main():
     # Assuming dataset is CIFAR-10
     num_classes = 10
 
+    if 'wide' not in args.target_model:
+        residual_count = 5
+        wide_flag = False
+    elif 'wide' in args.target_model:
+        residual_count = 4
+        wide_flag = True
+
     hps = resnet_model.HParams(batch_size=batch_size,
                              num_classes=num_classes,
                              min_lrn_rate=0.0001,
                              lrn_rate=0.1,
-                             num_residual_units=4,
+                             num_residual_units=residual_count,
+                             wide_flag=wide_flag,
                              use_bottleneck=False,
                              weight_decay_rate=0.0002,
                              relu_leakiness=0.1,
