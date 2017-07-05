@@ -9,7 +9,6 @@ import cifar_input
 import numpy as np
 import resnet_model
 import tensorflow as tf
-import cifar10_model
 from tensorflow.python.platform import flags
 
 FLAGS = tf.flags.FLAGS
@@ -17,12 +16,7 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', 'train', 'Train or evaluate')
 tf.flags.DEFINE_string('dataset', 'cifar10', 'cifar10 or cifar100.')
 tf.flags.DEFINE_string('train_data_path', 'cifar10/data_batch*', 'Filepattern for training data.')
-# tf.flags.DEFINE_string('log_root', 'logs_trial',
-#                            'Directory to keep the checkpoints. Should be a '
-#                            'parent directory of FLAGS.train_dir/eval_dir.')
 tf.flags.DEFINE_integer('image_size', 32, 'Image side length.')
-# tf.flags.DEFINE_string('train_dir', 'logs_trial/train',
-                        #    'Directory to keep training outputs.')
 
 
 def train(hps, batch_size):
@@ -39,8 +33,8 @@ def train(hps, batch_size):
   else:
     eps = args.eps
 
-  model = resnet_model.ResNet(hps, images, labels, FLAGS.mode, eps)
-  # model = cifar10_model.ConvNet(hps, images, labels, FLAGS.mode, eps)
+  # model = resnet_model.ResNet(hps, images, labels, FLAGS.mode, eps)
+  model = cifar10_model.ConvNet(hps, images, labels, FLAGS.mode, eps)
   model.build_graph()
 
   param_stats = tf.contrib.tfprof.model_analyzer.print_model_analysis(
@@ -134,9 +128,6 @@ def main():
                              relu_leakiness=0.1,
                              adv_only=True,
                              optimizer='mom')
-
-    # hps = cifar10_model.HParams(batch_size=batch_size,
-    #                          num_classes=num_classes, optimizer='mom')
 
     train(hps, batch_size)
 
