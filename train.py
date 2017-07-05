@@ -42,7 +42,7 @@ def main(model_name, model_type):
         # Finally print the result!
         test_error = tf_test_error_rate(model, x, X_test, Y_test)
         print('Test error: %.1f%%' % test_error)
-        model_name += '_cross_lip'
+        # model_name += '_cross_lip'
         save_model(model, model_name)
         json_string = model.to_json()
         with open(model_name+'.json', 'wr') as f:
