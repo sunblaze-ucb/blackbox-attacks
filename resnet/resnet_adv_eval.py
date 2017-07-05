@@ -1,4 +1,4 @@
-"""ResNet Train module.
+"""ResNet Evaluation module.
 """
 import time
 import six
@@ -17,12 +17,7 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', 'eval', 'Train or evaluate')
 tf.flags.DEFINE_string('dataset', 'cifar10', 'cifar10 or cifar100.')
 tf.flags.DEFINE_string('eval_data_path', 'cifar10/test_batch.bin', 'Filepattern for training data.')
-# tf.flags.DEFINE_string('log_root', 'logs',
-#                            'Directory to keep the checkpoints. Should be a '
-#                            'parent directory of FLAGS.train_dir/eval_dir.')
 tf.flags.DEFINE_integer('image_size', 32, 'Image side length.')
-# tf.flags.DEFINE_string('eval_dir', 'logs/eval',
-#                            'Directory to keep eval outputs.')
 tf.flags.DEFINE_integer('eval_batch_count', 100,
                             'Number of batches to eval.')
 tf.flags.DEFINE_bool('eval_once', True,
@@ -82,11 +77,10 @@ def evaluate(hps, batch_size):
 
     sess = tf.Session()
     print('Created session')
-    # return
-
 
     adv_exist_flag = 0
     if args.src_model is not None:
+        src_model = args.src_model
         adv_exist_flag = 1
         adv_path = 'adv_samples/'+args.src_model+'_{}.npy'.format(eps_num)
         print(adv_path)
@@ -94,6 +88,8 @@ def evaluate(hps, batch_size):
             images_adv = np.load(adv_path)
         else:
             raise ValueError('No adversarial samples exist for given source')
+    else:
+        src_model = args.target_model
 
     best_precision = 0.0
     best_precision_adv = 0.0
@@ -126,7 +122,7 @@ def evaluate(hps, batch_size):
             if i==0:
                 for j in range(10):
                     # print(images_adv_curr[j].shape())
-                    img.imsave( 'images/cifar10_adv_{}_{}.png'.format(j, eps_num),
+                    img.imsave( 'images/cifar10_adv_{}_{}_{}.png'.format( src_model, j, eps_num),
                         images_adv_curr[j].reshape(FLAGS.image_size, FLAGS.image_size, 3)*255)
 
             print('{}'.format(i))
@@ -168,10 +164,7 @@ def evaluate(hps, batch_size):
 
         if FLAGS.eval_once:
           break
-
-        # time.sleep(60)
-
-
+          
 def main():
     batch_size = 100
 
@@ -194,6 +187,7 @@ def main():
                              use_bottleneck=False,
                              weight_decay_rate=0.0002,
                              relu_leakiness=0.1,
+                             adv_only= False,
                              optimizer='mom')
 
     evaluate(hps, batch_size)
