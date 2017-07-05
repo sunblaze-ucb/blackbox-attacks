@@ -33,8 +33,7 @@ def train(hps, batch_size):
   else:
     eps = args.eps
 
-  # model = resnet_model.ResNet(hps, images, labels, FLAGS.mode, eps)
-  model = cifar10_model.ConvNet(hps, images, labels, FLAGS.mode, eps)
+  model = resnet_model.ResNet(hps, images, labels, FLAGS.mode, eps)
   model.build_graph()
 
   param_stats = tf.contrib.tfprof.model_analyzer.print_model_analysis(
@@ -64,7 +63,7 @@ def train(hps, batch_size):
                'precision': precision},
       every_n_iter=100)
 
-  stop_hook = tf.train.StopAtStepHook(last_step=80000)
+  stop_hook = tf.train.StopAtStepHook(last_step=100000)
 
   saver = tf.train.Saver(max_to_keep=10)
   checkpoint_hook = tf.train.CheckpointSaverHook(checkpoint_dir=log_root, saver=saver, save_steps = 10000)
@@ -92,8 +91,7 @@ def train(hps, batch_size):
 
   with tf.train.MonitoredTrainingSession(
       checkpoint_dir=log_root,
-      hooks=[logging_hook],
-    #   _LearningRateSetterHook()],
+      hooks=[logging_hook, _LearningRateSetterHook()],
       chief_only_hooks=[checkpoint_hook, summary_hook, stop_hook],
       # Since we provide a SummarySaverHook, we need to disable default
       # SummarySaverHook. To do that we set save_summaries_steps to 0.
@@ -101,7 +99,6 @@ def train(hps, batch_size):
       save_summaries_steps=0,
       config=tf.ConfigProto(allow_soft_placement=True)) as mon_sess:
     while not mon_sess.should_stop():
-    # while model.global_step < 1000000:
       mon_sess.run(model.train_op)
 
 def main():
@@ -126,7 +123,7 @@ def main():
                              use_bottleneck=False,
                              weight_decay_rate=0.0002,
                              relu_leakiness=0.1,
-                             adv_only=True,
+                             adv_only=False,
                              optimizer='mom')
 
     train(hps, batch_size)
