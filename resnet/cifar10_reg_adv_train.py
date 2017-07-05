@@ -66,32 +66,10 @@ def train(hps, batch_size):
 
   saver = tf.train.Saver(max_to_keep=10)
   checkpoint_hook = tf.train.CheckpointSaverHook(checkpoint_dir=log_root, saver=saver, save_steps = 10000)
-  class _LearningRateSetterHook(tf.train.SessionRunHook):
-    """Sets learning_rate based on global step."""
-
-    def begin(self):
-      self._lrn_rate = 0.1
-
-    def before_run(self, run_context):
-      return tf.train.SessionRunArgs(
-          model.global_step,  # Asks for global step value.
-          feed_dict={model.lrn_rate: self._lrn_rate})  # Sets learning rate
-
-    def after_run(self, run_context, run_values):
-      train_step = run_values.results
-      if train_step < 40000:
-        self._lrn_rate = 0.1
-      elif train_step < 60000:
-        self._lrn_rate = 0.01
-      elif train_step < 80000:
-        self._lrn_rate = 0.001
-      else:
-        self._lrn_rate = 0.0001
 
   with tf.train.MonitoredTrainingSession(
       checkpoint_dir=log_root,
       hooks=[logging_hook],
-    #   _LearningRateSetterHook()],
       chief_only_hooks=[checkpoint_hook, summary_hook, stop_hook],
       # Since we provide a SummarySaverHook, we need to disable default
       # SummarySaverHook. To do that we set save_summaries_steps to 0.

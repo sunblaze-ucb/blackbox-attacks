@@ -110,7 +110,7 @@ class ConvNet(object):
 
     if self.mode == 'train':
       self._build_train_op()
-      self.summaries = tf.summary.merge_all()
+    self.summaries = tf.summary.merge_all()
 
 
   def _build_model(self, input_var, adv=None, reuse=False):
@@ -211,12 +211,10 @@ class ConvNet(object):
     xent = tf.nn.sparse_softmax_cross_entropy_with_logits(
     logits=self.logits, labels=self.labels)
     self.ben_cost = tf.reduce_mean(xent, name='xent')
-    self.test_cost = tf.reduce_mean(xent, name='xent')
-  # tf.summary.scalar('cost', self.cost)
 
   def _define_adv_cost(self):
     xent_adv = tf.nn.sparse_softmax_cross_entropy_with_logits(
-    logits=self.adv_logits, labels=self.labels)
+    logits=self.adv_logits, labels=self.predicted_labels)
     self.adv_cost = tf.reduce_mean(xent_adv, name='xent_adv')
 
   def _build_train_op(self):
@@ -230,23 +228,50 @@ class ConvNet(object):
     self.lrn_rate = lr
     tf.summary.scalar('learning_rate', self.lrn_rate)
 
-    trainable_variables = tf.trainable_variables()
-    grads = tf.gradients(self.cost, trainable_variables)
+    loss_averages_op = self._add_loss_summaries(self.cost)
 
-    if self.hps.optimizer == 'sgd':
-      optimizer = tf.train.GradientDescentOptimizer(self.lrn_rate)
-    elif self.hps.optimizer == 'mom':
-      optimizer = tf.train.MomentumOptimizer(self.lrn_rate, 0.9)
+      # Compute gradients.
+    with tf.control_dependencies([loss_averages_op]):
+      opt = tf.train.GradientDescentOptimizer(self.lrn_rate)
+      grads = opt.compute_gradients(self.cost)
 
-    apply_op = optimizer.apply_gradients(
-    zip(grads, trainable_variables),
-    global_step=self.global_step, name='train_step')
+      # Apply gradients.
+    apply_gradient_op = opt.apply_gradients(grads, global_step=self.global_step)
 
-    train_ops = [apply_op] + self._extra_train_ops
-    self.train_op = tf.group(*train_ops)
+      # Add histograms for trainable variables.
+    for var in tf.trainable_variables():
+      tf.histogram_summary(var.op.name, var)
+
+      # Add histograms for gradients.
+    for grad, var in grads:
+      if grad is not None:
+        tf.histogram_summary(var.op.name + '/gradients', grad)
+
+      # Track the moving averages of all trainable variables.
+    variable_averages = tf.train.ExponentialMovingAverage(
+          MOVING_AVERAGE_DECAY, self.global_step)
+    variables_averages_op = variable_averages.apply(tf.trainable_variables())
+
+    with tf.control_dependencies([apply_gradient_op, variables_averages_op]):
+      train_op = tf.no_op(name='train')
+
+    # trainable_variables = tf.trainable_variables()
+    # grads = tf.gradients(self.cost, trainable_variables)
+    #
+    # if self.hps.optimizer == 'sgd':
+    #   optimizer = tf.train.GradientDescentOptimizer(self.lrn_rate)
+    # elif self.hps.optimizer == 'mom':
+    #   optimizer = tf.train.MomentumOptimizer(self.lrn_rate, 0.9)
+    #
+    # apply_op = optimizer.apply_gradients(
+    # zip(grads, trainable_variables),
+    # global_step=self.global_step, name='train_step')
+    #
+    # train_ops = [apply_op] + self._extra_train_ops
+    self.train_op = train_op
 
 
-  def _add_loss_summaries(total_loss):
+  def _add_loss_summaries(self, total_loss):
     """Add summaries for losses in CIFAR-10 model.
 
     Generates moving average for all losses and associated summaries for
@@ -271,16 +296,6 @@ class ConvNet(object):
       tf.scalar_summary(l.op.name, loss_averages.average(l))
 
     return loss_averages_op
-
-  # def _decay(self):
-  #   """L2 weight decay loss."""
-  #   costs = []
-  #   for var in tf.trainable_variables():
-  #     if var.op.name.find(r'DW') > 0:
-  #       costs.append(tf.nn.l2_loss(var))
-  #     # tf.summary.histogram(var.op.name, var)
-  #
-  #   return tf.multiply(self.hps.weight_decay_rate, tf.add_n(costs))
 
 def _activation_summary(x):
   """Helper to create summaries for activations.
@@ -340,59 +355,3 @@ def _variable_with_weight_decay(name, shape, stddev, wd):
     weight_decay = tf.mul(tf.nn.l2_loss(var), wd, name='weight_loss')
     tf.add_to_collection('losses', weight_decay)
   return var
-
-
-# def train(total_loss, global_step):
-#   """Train CIFAR-10 model.
-#
-#   Create an optimizer and apply to all trainable variables. Add moving
-#   average for all trainable variables.
-#
-#   Args:
-#   total_loss: Total loss from loss().
-#   global_step: Integer Variable counting the number of training steps
-#     processed.
-#   Returns:
-#   train_op: op for training.
-#   """
-#   # Variables that affect learning rate.
-#   num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
-#   decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
-#
-#   # Decay the learning rate exponentially based on the number of steps.
-#   lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE,
-#                   global_step,
-#                   decay_steps,
-#                   LEARNING_RATE_DECAY_FACTOR,
-#                   staircase=True)
-#   tf.scalar_summary('learning_rate', lr)
-#
-#   # Generate moving averages of all losses and associated summaries.
-#   loss_averages_op = _add_loss_summaries(total_loss)
-#
-#   # Compute gradients.
-#   with tf.control_dependencies([loss_averages_op]):
-#     opt = tf.train.GradientDescentOptimizer(lr)
-#     grads = opt.compute_gradients(total_loss)
-#
-#   # Apply gradients.
-#   apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
-#
-#   # Add histograms for trainable variables.
-#   for var in tf.trainable_variables():
-#     tf.histogram_summary(var.op.name, var)
-#
-#   # Add histograms for gradients.
-#   for grad, var in grads:
-#   if grad is not None:
-#     tf.histogram_summary(var.op.name + '/gradients', grad)
-#
-#   # Track the moving averages of all trainable variables.
-#   variable_averages = tf.train.ExponentialMovingAverage(
-#     MOVING_AVERAGE_DECAY, global_step)
-#   variables_averages_op = variable_averages.apply(tf.trainable_variables())
-#
-#   with tf.control_dependencies([apply_gradient_op, variables_averages_op]):
-#     train_op = tf.no_op(name='train')
-#
-#   return train_op
