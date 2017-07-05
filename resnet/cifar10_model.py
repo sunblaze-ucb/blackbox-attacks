@@ -60,7 +60,7 @@ NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
 TOWER_NAME = 'tower'
 
 HParams = namedtuple('HParams',
-           'batch_size, num_classes, optimizer')
+           'batch_size, adv_only, num_classes, optimizer')
 
 
 class ConvNet(object):
@@ -77,7 +77,7 @@ class ConvNet(object):
     """
     self.hps = hps
     self._images = images
-    self.labels = labels
+    self.labels = tf.cast(labels, tf.int64)
     self.mode = mode
     self.eps = eps
 
@@ -91,17 +91,22 @@ class ConvNet(object):
     self._build_model(self._images)
     self._define_ben_cost()
     if self.eps is not None:
-      grad, = tf.gradients(self.test_cost, self._images)
+      grad, = tf.gradients(self.ben_cost, self._images)
       signed_grad = tf.sign(grad)
       scaled_signed_grad = self.eps * signed_grad
       adv_images = tf.stop_gradient(self._images + scaled_signed_grad)
       self._build_model(adv_images, 'adv', True)
       self._define_adv_cost()
-      self.cost = 0.5*(self.ben_cost + self.adv_cost)
-      tf.summary.scalar('cost', self.cost)
+      if self.hps.adv_only == False:
+        self.cost = 0.5*(self.ben_cost + self.adv_cost)
+      elif self.hps.adv_only == True:
+        self.cost = self.adv_cost
     else:
+      self.adv_cost = tf.constant(0)
       self.cost = self.ben_cost
-      tf.summary.scalar('cost', self.cost)
+
+    tf.summary.scalar('adv_cost', self.adv_cost)
+    tf.summary.scalar('cost', self.cost)
 
     if self.mode == 'train':
       self._build_train_op()
@@ -200,16 +205,17 @@ class ConvNet(object):
       else:
         self.logits = softmax_linear
         self.predictions = tf.nn.softmax(softmax_linear)
+        self.predicted_labels = tf.reshape(tf.argmax(self.predictions, axis=1),[self.hps.batch_size])
 
   def _define_ben_cost(self):
-    xent = tf.nn.softmax_cross_entropy_with_logits(
+    xent = tf.nn.sparse_softmax_cross_entropy_with_logits(
     logits=self.logits, labels=self.labels)
     self.ben_cost = tf.reduce_mean(xent, name='xent')
     self.test_cost = tf.reduce_mean(xent, name='xent')
   # tf.summary.scalar('cost', self.cost)
 
   def _define_adv_cost(self):
-    xent_adv = tf.nn.softmax_cross_entropy_with_logits(
+    xent_adv = tf.nn.sparse_softmax_cross_entropy_with_logits(
     logits=self.adv_logits, labels=self.labels)
     self.adv_cost = tf.reduce_mean(xent_adv, name='xent_adv')
 
