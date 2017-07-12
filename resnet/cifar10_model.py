@@ -128,12 +128,21 @@ class ConvNet(object):
   # by replacing all instances of tf.get_variable() with tf.Variable().
   #
   # conv1
+    with tf.variable_scope('init', reuse=reuse) as scope:
+      if self.mode == 'train':
+        x = tf.map_fn(lambda img: tf.image.random_crop(img, [height, width, 3]), input_var)
+        x = tf.map_fn(lambda img: tf.image.random_flip_left_right(img), x)
+        x = tf.map_fn(lambda img: tf.image.random_brightness(img, max_delta=63), x)
+        x = tf.map_fn(lambda img: tf.image.random_contrast(img, lower=0.2, upper=1.8), x)
+      elif self.mode == 'eval':
+        x = tf.map_fn(lambda img: tf.image.resize_image_with_crop_or_pad(img, height, width), input_var)
+      x = tf.map_fn(lambda img: tf.image.per_image_standardization(img), input_var)
     with tf.variable_scope('conv1', reuse=reuse) as scope:
       kernel = _variable_with_weight_decay('weights',
                                          shape=[5, 5, 3, 64],
                                          stddev=5e-2,
                                          wd=0.0)
-      conv = tf.nn.conv2d(input_var, kernel, [1, 1, 1, 1], padding='SAME')
+      conv = tf.nn.conv2d(x, kernel, [1, 1, 1, 1], padding='SAME')
       biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.0))
       pre_activation = tf.nn.bias_add(conv, biases)
       conv1 = tf.nn.relu(pre_activation, name=scope.name)
@@ -255,19 +264,6 @@ class ConvNet(object):
     with tf.control_dependencies([apply_gradient_op, variables_averages_op]):
       train_op = tf.no_op(name='train')
 
-    # trainable_variables = tf.trainable_variables()
-    # grads = tf.gradients(self.cost, trainable_variables)
-    #
-    # if self.hps.optimizer == 'sgd':
-    #   optimizer = tf.train.GradientDescentOptimizer(self.lrn_rate)
-    # elif self.hps.optimizer == 'mom':
-    #   optimizer = tf.train.MomentumOptimizer(self.lrn_rate, 0.9)
-    #
-    # apply_op = optimizer.apply_gradients(
-    # zip(grads, trainable_variables),
-    # global_step=self.global_step, name='train_step')
-    #
-    # train_ops = [apply_op] + self._extra_train_ops
     self.train_op = train_op
 
 

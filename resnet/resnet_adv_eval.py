@@ -32,7 +32,7 @@ def evaluate(hps, batch_size):
     eps_num = args.eps
     eps = eps_num/255.
 
-    batch_images = np.load('cifar10' + '/batch_images.npy')
+    # batch_images = np.load('cifar10' + '/batch_images.npy')
     batch_labels = np.load('cifar10' + '/batch_labels.npy')
     batch_orig_images = np.load('cifar10' + '/batch_orig_images.npy')
 
@@ -40,16 +40,13 @@ def evaluate(hps, batch_size):
         img.imsave( 'images/cifar10_{}.png'.format(i),
             batch_orig_images[i].reshape(FLAGS.image_size, FLAGS.image_size, 3) *255)
 
-    N0, H0, W0, C0 = batch_images.shape
+    N0, H0, W0, C0 = batch_orig_images.shape
     N1, L1 = batch_labels.shape
 
     X = tf.placeholder(shape=(batch_size, H0, W0, C0), dtype=tf.float32)
     Y = tf.placeholder(shape=(batch_size, L1), dtype=tf.float32)
 
-    # x = tf.Variable(X, dtype=tf.float32)
-    x_scaled = tf.map_fn(lambda img: tf.image.per_image_standardization(img), X)
-
-    model = resnet_model.ResNet(hps, x_scaled, Y, FLAGS.mode)
+    model = resnet_model.ResNet(hps, X, Y, FLAGS.mode)
     model.build_graph()
     print('Created graph')
 
@@ -83,6 +80,7 @@ def evaluate(hps, batch_size):
         src_model = args.src_model
         adv_exist_flag = 1
         adv_path = 'adv_samples/'+args.src_model+'_{}.npy'.format(eps_num)
+        # adv_path = 'cifar10/batch_orig_images.npy'
         print(adv_path)
         if os.path.exists(os.path.join(script_dir,adv_path)):
             images_adv = np.load(adv_path)
@@ -122,7 +120,7 @@ def evaluate(hps, batch_size):
             if i==0:
                 for j in range(10):
                     # print(images_adv_curr[j].shape())
-                    img.imsave( 'images/cifar10_adv_{}_{}_{}.png'.format( src_model, j, eps_num),
+                    img.imsave( 'images/cifar10_adv_{}_{}_{}.png'.format(src_model, j, eps_num),
                         images_adv_curr[j].reshape(FLAGS.image_size, FLAGS.image_size, 3)*255)
 
             print('{}'.format(i))
@@ -164,7 +162,7 @@ def evaluate(hps, batch_size):
 
         if FLAGS.eval_once:
           break
-          
+
 def main():
     batch_size = 100
 

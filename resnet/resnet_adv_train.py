@@ -23,7 +23,7 @@ def train(hps, batch_size):
   """Training loop."""
   script_dir = os.path.dirname(__file__)
 
-  images, orig_images, labels = cifar_input.build_input(
+  images, orig_images, labels, one_d_labels = cifar_input.build_input(
       FLAGS.dataset, FLAGS.train_data_path, hps.batch_size, FLAGS.mode)
 
   if args.eps is not None:
@@ -33,7 +33,7 @@ def train(hps, batch_size):
   else:
     eps = args.eps
 
-  model = resnet_model.ResNet(hps, images, labels, FLAGS.mode, eps)
+  model = resnet_model.ResNet(hps, orig_images, labels, FLAGS.mode, eps, 0, 1)
   model.build_graph()
 
   param_stats = tf.contrib.tfprof.model_analyzer.print_model_analysis(
@@ -49,6 +49,9 @@ def train(hps, batch_size):
   truth = tf.argmax(model.labels, axis=1)
   predictions = tf.argmax(model.predictions, axis=1)
   precision = tf.reduce_mean(tf.to_float(tf.equal(predictions, truth)))
+  if args.eps is not None:
+      adv_predictions = tf.argmax(model.adv_predictions, axis=1)
+      adv_precision = tf.reduce_mean(tf.to_float(tf.equal(adv_predictions, truth)))
 
   summary_hook = tf.train.SummarySaverHook(
       save_steps=100,
@@ -56,14 +59,18 @@ def train(hps, batch_size):
       summary_op=tf.summary.merge([model.summaries,
                                    tf.summary.scalar('Precision', precision)]))
 
+  log_dict = {'step': model.global_step,
+           'loss': model.cost,
+           'adv_loss': model.adv_cost,
+           'precision': precision}
+  if args.eps is not None:
+      log_dict['adv_precision'] = adv_precision
+
   logging_hook = tf.train.LoggingTensorHook(
-      tensors={'step': model.global_step,
-               'loss': model.cost,
-               'adv_loss': model.adv_cost,
-               'precision': precision},
+      tensors=log_dict,
       every_n_iter=100)
 
-  stop_hook = tf.train.StopAtStepHook(last_step=100000)
+  stop_hook = tf.train.StopAtStepHook(last_step=80000)
 
   saver = tf.train.Saver(max_to_keep=10)
   checkpoint_hook = tf.train.CheckpointSaverHook(checkpoint_dir=log_root, saver=saver, save_steps = 10000)

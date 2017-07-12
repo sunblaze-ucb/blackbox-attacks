@@ -101,10 +101,11 @@ def build_input(dataset, data_path, batch_size, mode):
 
   # Read 'batch' labels + images from the example queue.
   images, orig_images, labels = example_queue.dequeue_many(batch_size)
+  one_d_labels = tf.reshape(labels,[batch_size])
   labels = tf.reshape(labels, [batch_size, 1])
   indices = tf.reshape(tf.range(0, batch_size, 1), [batch_size, 1])
   labels = tf.sparse_to_dense(
-      tf.concat(1,values=[indices, labels]),
+      tf.concat([indices, labels],1),
       [batch_size, num_classes], 1.0, 0.0)
 
   assert len(images.get_shape()) == 4
@@ -116,4 +117,4 @@ def build_input(dataset, data_path, batch_size, mode):
 
   # Display the training images in the visualizer.
   tf.summary.image('images', images)
-  return images, orig_images, labels
+  return images, orig_images, labels, one_d_labels

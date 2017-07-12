@@ -38,7 +38,7 @@ HParams = namedtuple('HParams',
 class ResNet(object):
   """ResNet model."""
 
-  def __init__(self, hps, images, labels, mode, eps = None):
+  def __init__(self, hps, images, labels, mode, eps=None, clip_min=None, clip_max=None):
     """ResNet constructor.
 
     Args:
@@ -52,19 +52,33 @@ class ResNet(object):
     self.labels = labels
     self.mode = mode
     self.eps = eps
+    self.clip_min = clip_min
+    self.clip_max = clip_max
 
     self._extra_train_ops = []
 
   def build_graph(self):
     """Build a whole graph for the model."""
     self.global_step = tf.contrib.framework.get_or_create_global_step()
-    self._build_model(self._images)
+    x_in = tf.map_fn(lambda img: tf.image.per_image_standardization(img), self._images)
+    # For TF versions<1.*, comment out the code below
+    # mean, var = tf.nn.moments(self._images, axes=(1,2,3))
+    # stddev = tf.sqrt(var)
+    # adjusted_stddev = tf.maximum(stddev, 1.0/tf.sqrt(3072.0))
+    # x_in = (self._images - mean[:, None, None, None]) / adjusted_stddev[:, None, None, None]
+
+    # Uncomment this if training/evaluating on raw_inputs is desired
+    # x_in = self._images
+    self._build_model(x_in)
     self._define_ben_cost()
     if self.eps is not None:
       grad, = tf.gradients(self.ben_cost, self._images)
       signed_grad = tf.sign(grad)
       scaled_signed_grad = self.eps * signed_grad
       adv_images = tf.stop_gradient(self._images + scaled_signed_grad)
+      if (self.clip_min is not None) and (self.clip_max is not None):
+          adv_images = tf.clip_by_value(adv_images, self.clip_min, self.clip_max)
+    #   x_in = tf.map_fn(lambda img: tf.image.per_image_standardization(img), self._images)
       self._build_model(adv_images, 'adv', True)
       self._define_adv_cost()
       if self.hps.adv_only == False:
@@ -78,6 +92,8 @@ class ResNet(object):
     tf.summary.scalar('adv_cost', self.adv_cost)
     tf.summary.scalar('cost', self.cost)
 
+    print(self.cost.get_shape().as_list())
+
     if self.mode == 'train':
       self._build_train_op()
     self.summaries = tf.summary.merge_all()
@@ -88,10 +104,11 @@ class ResNet(object):
 
   def _build_model(self, input_var, adv=None, reuse=False):
     """Build the core model within the graph."""
+    # x = tf.map_fn(lambda img: tf.image.per_image_standardization(img), input_var)
     with tf.variable_scope('init', reuse=reuse):
+    #   x = tf.map_fn(lambda img: tf.image.per_image_standardization(img), input_var)
     #   x = self._images
-      x = input_var
-      x = self._conv('init_conv', x, 3, 3, 16, self._stride_arr(1))
+      x = self._conv('init_conv', input_var, 3, 3, 16, self._stride_arr(1))
 
     strides = [1, 2, 2]
     activate_before_residual = [True, False, False]
@@ -141,12 +158,11 @@ class ResNet(object):
       if adv is not None:
           self.adv_logits = logits
           self.adv_predictions = tf.nn.softmax(logits)
-        #   self.adv_labels = tf.argmax(self.adv_predictions, axis=1)
       else:
           self.logits = logits
           self.predictions = tf.nn.softmax(logits)
-          self.predicted_labels = tf.one_hot(tf.reshape(tf.argmax(self.predictions, axis=1),[self.hps.batch_size]),depth=self.hps.num_classes)
-
+        #   self.predicted_labels = tf.one_hot(tf.reshape(tf.argmax(self.predictions, axis=1),[self.hps.batch_size]),depth=self.hps.num_classes)
+          self.predicted_labels = tf.one_hot(tf.argmax(self.predictions, axis=1), depth = self.hps.num_classes)
   def _define_ben_cost(self):
     xent = tf.nn.softmax_cross_entropy_with_logits(
         logits=self.logits, labels=self.labels)
@@ -166,6 +182,7 @@ class ResNet(object):
     tf.summary.scalar('learning_rate', self.lrn_rate)
 
     trainable_variables = tf.trainable_variables()
+    # trainable_variables.remove(input_scaled)
     grads = tf.gradients(self.cost, trainable_variables)
 
     if self.hps.optimizer == 'sgd':
