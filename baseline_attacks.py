@@ -3,6 +3,7 @@ import tensorflow as tf
 import keras.backend as K
 from mnist import data_mnist, set_mnist_flags, load_model
 from os.path import basename
+from matplotlib import image as img
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
@@ -99,7 +100,7 @@ def main(target_model_name):
 
     y = K.placeholder((None, FLAGS.NUM_CLASSES))
 
-    dim = int(FLAGS.IMAGE_ROWS*FLAGS.IMAGE_COLS)
+    dim = int(FLAGS.IMAGE_ROWS*FLAGS.IMAGE_COLS*FLAGS.NUM_CHANNELS)
 
     _, _, X_test, Y_test = data_mnist()
     print('Loaded data')
@@ -120,30 +121,65 @@ def main(target_model_name):
 
     scales, mean_dists, closest_means = length_scales(X_test, Y_test_uncat)
 
-    adv_success = 0.0
-    for i in range(FLAGS.NUM_CLASSES):
-        curr_indices = np.where(Y_test_uncat == i)
-        X_test_curr = X_test[curr_indices]
-        Y_test_curr = Y_test_uncat[curr_indices]
+    if args.norm == 'linf':
+        eps_list = list(np.linspace(0.0, 0.1, 5))
+        eps_list.extend(np.linspace(0.2, 0.5, 7))
+    elif args.norm == 'l2':
+        eps_list = list(np.linspace(0.0, 9.0, 28))
 
-        mean_diff_vec = means[int(closest_means[i])] - means[i]
+    ofile = open('output_data/baseline_'+args.norm+'_md_'+str(target_model_name)+'.txt', 'a')
 
-        mean_diff_vec_signed = np.sign(mean_diff_vec)
+    for eps in eps_list:
+        adv_success = 0.0
+        avg_l2_perturb = 0.0
+        for i in range(FLAGS.NUM_CLASSES):
+            curr_indices = np.where(Y_test_uncat == i)
+            X_test_curr = X_test[curr_indices]
+            Y_test_curr = Y_test_uncat[curr_indices]
 
-        X_adv = np.clip(X_test_curr + args.eps * mean_diff_vec_signed, CLIP_MIN, CLIP_MAX)
+            closest_class = int(closest_means[i])
 
-        predictions_adv = K.get_session().run([prediction], feed_dict={x: X_adv, K.learning_phase(): 0})[0]
+            mean_diff_vec = means[closest_class] - means[i]
 
-        adv_success += np.sum(np.argmax(predictions_adv, 1) != Y_test_curr)
+            if args.norm == 'linf':
+                mean_diff_vec_signed = np.sign(mean_diff_vec)
+                perturb = eps * mean_diff_vec_signed
+            elif args.norm == 'l2':
+                mean_diff_vec_unit = mean_diff_vec/np.linalg.norm(mean_diff_vec.reshape(dim))
+                perturb = eps * mean_diff_vec_unit
 
-    print('{}'.format(adv_success/ len(X_test)))
+            X_adv = np.clip(X_test_curr + perturb, CLIP_MIN, CLIP_MAX)
+            if args.norm == 'linf':
+                # Getting the norm of the perturbation
+                perturb_norm = np.linalg.norm((X_adv-X_test_curr).reshape(len(X_test_curr), dim), axis=1)
+                perturb_norm_batch = np.mean(perturb_norm)
+                avg_l2_perturb += perturb_norm_batch
+
+            predictions_adv = K.get_session().run([prediction], feed_dict={x: X_adv, K.learning_phase(): 0})[0]
+
+            adv_success += np.sum(np.argmax(predictions_adv, 1) != Y_test_curr)
+
+            for k in range(2):
+                adv_label = np.argmax(predictions_adv[k].reshape(1, FLAGS.NUM_CLASSES),1)
+                img.imsave( 'images/baseline/'+args.norm+'/md_{}_{}_{}_{}_{}.png'.format(
+                        i, k, adv_label, closest_class, eps),
+                        X_adv[k].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS)*255, cmap='gray')
+        err = 100.0 * adv_success/ len(X_test)
+        avg_l2_perturb = avg_l2_perturb/FLAGS.NUM_CLASSES
+
+        print('{}, {}'.format(eps, err))
+        print('{}'.format(avg_l2_perturb))
+        ofile.write('{:.2f} {:.2f} {:.2f} \n'.format(eps, err, avg_l2_perturb))
+    ofile.close()
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("target_model", help="target model for attack")
-    parser.add_argument("--eps", type=float, default=0.3,
-                            help="FGS attack scale")
+    # parser.add_argument("--eps", type=float, default=0.3,
+    #                         help="FGS attack scale")
+    parser.add_argument("--norm", type=str, default='linf',
+                            help="Norm constraint to use")
 
     args = parser.parse_args()
 

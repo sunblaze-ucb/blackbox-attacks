@@ -3,5 +3,9 @@
 resnet/logs_*/
 resnet/cifar10/*
 resnet/adv_samples
+resnet/old_logs/
 cifar10/*
 *.bin
+images/*
+resnet/images/*
+*.p
