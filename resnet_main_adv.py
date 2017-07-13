@@ -45,8 +45,8 @@ tf.app.flags.DEFINE_string('log_root', '',
                            'parent directory of FLAGS.train_dir/eval_dir.')
 tf.app.flags.DEFINE_integer('num_gpus', 0,
                             'Number of gpus used for training. (0 or 1)')
-tf.app.flags.DEFINE_integer('epsilon', 8,
-                            'Strength of adversarial perturbation. (0 to 255)')
+tf.app.flags.DEFINE_float('epsilon', 8.,
+                          'Strength of adversarial perturbation. (0 to 255)')
 
 
 def train(hps):
@@ -56,17 +56,18 @@ def train(hps):
   images_scaled = tf.map_fn(lambda image: tf.image.per_image_standardization(image), images)
 
   # Predict labels to use in no-label-leaking adversarial examples. Not in training mode.
-  poison_labels = tf.fill(labels.get_shape().as_list(), float('NaN'))
-  noleak_model = resnet_model_reusable.ResNet(hps, images_scaled, poison_labels, 'eval')
+  noleak_model = resnet_model_reusable.ResNet(hps, images_scaled, None, 'eval')
   noleak_model._build_model()
   noleak_labels = tf.one_hot(tf.argmax(noleak_model.logits, axis=1), depth=hps.num_classes)
 
   # Generate adversarial examples. Not in training mode.
   adv_model = resnet_model_reusable.ResNet(hps, images_scaled, noleak_labels, 'eval', reuse_variables=True)
   adv_model._build_model()
-  grads, = tf.gradients(adv_model.cost, images)
-  perturbation = (FLAGS.epsilon / 255.) * tf.sign(grads)
-  adv_images = tf.stop_gradient(tf.clip_by_value(images + perturbation, 0., 1.))
+  adv_model._build_cost()
+  grads, = tf.gradients(adv_model.cost, images, name='gradients_fgsm')
+  perturbation = FLAGS.epsilon * tf.sign(grads)
+  adv_images = tf.stop_gradient(tf.clip_by_value(images + perturbation, 0., 255.))
+  tf.summary.image('adv_images', adv_images)
 
   # Train on benign and adversarial images.
   # This is equivalent to averaging the costs of two copies of the model.
@@ -89,18 +90,27 @@ def train(hps):
 
   truth = tf.argmax(model.labels, axis=1)
   predictions = tf.argmax(model.predictions, axis=1)
-  precision = tf.reduce_mean(tf.to_float(tf.equal(predictions, truth)))
+  eq_float = tf.to_float(tf.equal(predictions, truth))
+  precision_benign = tf.reduce_mean(eq_float[:hps.batch_size])
+  precision_adv = tf.reduce_mean(eq_float[hps.batch_size:])
+  precision = (precision_benign + precision_adv) / 2
 
   summary_hook = tf.train.SummarySaverHook(
       save_steps=100,
       output_dir=FLAGS.train_dir,
       summary_op=tf.summary.merge([model.summaries,
-                                   tf.summary.scalar('Precision', precision)]))
+                                   tf.summary.scalar('Precision', precision),
+                                   tf.summary.scalar('Precision_benign', precision_benign),
+                                   tf.summary.scalar('Precision_adversarial', precision_adv)]))
+
+  stop_hook = tf.train.StopAtStepHook(last_step=80000)
 
   logging_hook = tf.train.LoggingTensorHook(
       tensors={'step': model.global_step,
                'loss': model.cost,
-               'precision': precision},
+               'precision': precision,
+               'precision_benign': precision_benign,
+               'precision_adv': precision_adv},
       every_n_iter=100)
 
   class _LearningRateSetterHook(tf.train.SessionRunHook):
@@ -128,7 +138,7 @@ def train(hps):
   with tf.train.MonitoredTrainingSession(
       checkpoint_dir=FLAGS.log_root,
       hooks=[logging_hook, _LearningRateSetterHook()],
-      chief_only_hooks=[summary_hook],
+      chief_only_hooks=[summary_hook, stop_hook],
       # Since we provide a SummarySaverHook, we need to disable default
       # SummarySaverHook. To do that we set save_summaries_steps to 0.
       save_summaries_steps=0,
