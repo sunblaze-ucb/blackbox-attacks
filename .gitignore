@@ -1,0 +1,7 @@
+/cifar-10-batches-bin
+/log*
+/tutorial/train
+terminal*.txt
+*.tar.gz
+*.zip
+*.pyc
