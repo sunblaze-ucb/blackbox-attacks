@@ -59,6 +59,8 @@ class ResNet(object):
     """Build a whole graph for the model."""
     self.global_step = tf.contrib.framework.get_or_create_global_step()
     self._build_model()
+    self._build_cost()
+    tf.summary.scalar('cost', self.cost)
     if self.mode == 'train':
       self._build_train_op()
     self.summaries = tf.summary.merge_all()
@@ -115,17 +117,15 @@ class ResNet(object):
       x = self._global_avg_pool(x)
 
     with tf.variable_scope('logit', reuse=self.reuse_variables):
-      logits = self._fully_connected(x, self.hps.num_classes)
-      self.logits = logits
-      self.predictions = tf.nn.softmax(logits)
+      self.logits = self._fully_connected(x, self.hps.num_classes)
+      self.predictions = tf.nn.softmax(self.logits)
 
+  def _build_cost(self):
     with tf.variable_scope('costs'):
       xent = tf.nn.softmax_cross_entropy_with_logits(
-          logits=logits, labels=self.labels)
+          logits=self.logits, labels=self.labels)
       self.cost = tf.reduce_mean(xent, name='xent')
       self.cost += self._decay()
-
-      tf.summary.scalar('cost', self.cost)
 
   def _build_train_op(self):
     """Build training specific ops for the graph."""
