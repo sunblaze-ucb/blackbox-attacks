@@ -328,3 +328,7 @@ modelA_adv_0.3_linf_iter->modelA_adv_0.3_linf_iter: 11.3
 modelA_adv_0.3_linf_iter_nob->modelA_adv_0.3_linf_iter_nob: 10.2 
 modelA_adv_0.3_linf_iter->modelA_adv_0.3_linf_iter: 11.3 
 modelA_adv_0.3_linf_iter_nob->modelA_adv_0.3_linf_iter_nob: 10.2 
+modelF->modelF: 100.0 
+modelF->modelF: 100.0 
+modelF->modelF: 100.0 
+modelF->modelA_adv: 13.3 
