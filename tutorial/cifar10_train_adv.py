@@ -48,7 +48,7 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('train_dir', '/tmp/cifar10_train',
                            """Directory where to write event logs """
                            """and checkpoint.""")
-tf.app.flags.DEFINE_integer('max_steps', 100000,
+tf.app.flags.DEFINE_integer('max_steps', 1000000,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
@@ -92,6 +92,9 @@ def train():
     # Build a Graph that trains the model with one batch of examples and
     # updates the model parameters.
     train_op = cifar10_reusable.train(loss_total, global_step)
+
+    precision = tf.reduce_mean(tf.cast(tf.equal(tf.cast(tf.argmax(logits, axis=1), tf.int32), labels), tf.float32))
+    tf.summary.scalar('precision', precision)
 
     class _LoggerHook(tf.train.SessionRunHook):
       """Logs loss and runtime."""

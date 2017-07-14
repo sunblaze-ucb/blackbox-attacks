@@ -78,6 +78,9 @@ def train():
     # updates the model parameters.
     train_op = cifar10.train(loss, global_step)
 
+    precision = tf.reduce_mean(tf.cast(tf.equal(tf.cast(tf.argmax(logits, axis=1), tf.int32), labels), tf.float32))
+    tf.summary.scalar('precision', precision)
+
     class _LoggerHook(tf.train.SessionRunHook):
       """Logs loss and runtime."""
 
