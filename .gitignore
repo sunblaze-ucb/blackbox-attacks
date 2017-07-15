@@ -6,3 +6,4 @@ terminal*.txt
 *.zip
 *.pyc
 *.npy
+*.raw

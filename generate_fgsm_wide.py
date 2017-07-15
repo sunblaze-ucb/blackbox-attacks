@@ -3,7 +3,7 @@ import tensorflow as tf
 import tqdm
 
 import cifar_input_nostd
-import resnet_model_reusable
+import resnet_model_reusable_wide
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('train_data_path', '',
@@ -17,11 +17,11 @@ tf.app.flags.DEFINE_float('epsilon', 8.,
 batch_size = 100
 num_classes = 10
 
-hps = resnet_model_reusable.HParams(batch_size=batch_size,
+hps = resnet_model_reusable_wide.HParams(batch_size=batch_size,
                                     num_classes=num_classes,
                                     min_lrn_rate=0.0001,
                                     lrn_rate=0.1,
-                                    num_residual_units=5,
+                                    num_residual_units=4,
                                     use_bottleneck=False,
                                     weight_decay_rate=0.0002,
                                     relu_leakiness=0.1,
@@ -32,7 +32,7 @@ images, labels = cifar_input_nostd.build_input(
 images_scaled = tf.map_fn(lambda image: tf.image.per_image_standardization(image), images)
 
 
-adv_model = resnet_model_reusable.ResNet(hps, images_scaled, None, 'eval')
+adv_model = resnet_model_reusable_wide.ResNet(hps, images_scaled, None, 'eval')
 adv_model._build_model()
 # Predict labels to use in no-label-leaking adversarial examples. Not in training mode.
 adv_model.labels = tf.one_hot(tf.argmax(adv_model.logits, axis=1), depth=hps.num_classes)
@@ -54,6 +54,6 @@ adv_imgs_batches = adv_imgs.reshape(500, batch_size, 32, 32, 3)
 for i in tqdm.trange(500):
     adv_imgs_batches[i] = sess.run(adv_images)
 
-np.save('static_adv_thin.npy', adv_imgs)
-with open('static_adv_thin.raw', 'wb') as f:
+np.save('static_adv_wide.npy', adv_imgs)
+with open('static_adv_wide.raw', 'wb') as f:
     f.write(adv_imgs)
