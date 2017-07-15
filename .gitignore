@@ -5,3 +5,4 @@ terminal*.txt
 *.tar.gz
 *.zip
 *.pyc
+*.npy
