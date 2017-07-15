@@ -209,3 +209,79 @@ plot 'output_data/baseline_l2_md_modelA.txt' u 1:2:(sprintf("%.1f", $2)) with la
 'output_data/baseline_l2_md_modelA_adv_0.3_linf_iter.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
 'output_data/baseline_l2_md_modelA_adv_0.3_linf_iter.txt' u 1:2 with lines ls 4 title 'ModelA_iter_0.3'
 unset output
+
+set output "plots/rand_attacks_modelA_variants.png"
+
+set xlabel 'r$\alpha$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title 'Black-box adversarial success using random samples on Model A variants'
+
+plot 'output_data/baseline_linf_md_rand_0.51_modelA.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.51_modelA.txt' u 2:3 with lines ls 1 title 'ModelA', \
+'output_data/baseline_linf_md_rand_0.51_modelA_adv.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.51_modelA_adv.txt' u 2:3 with lines ls 2 title 'ModelA_adv_0.3', \
+'output_data/baseline_linf_md_rand_0.51_modelA_ens_0.3_linf_ACD.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.51_modelA_ens_0.3_linf_ACD.txt' u 2:3 with lines ls 3 title 'ModelA_ens_0.3', \
+'output_data/baseline_linf_md_rand_0.51_modelA_adv_0.3_linf_iter.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.51_modelA_adv_0.3_linf_iter.txt' u 2:3 with lines ls 4 title 'ModelA_iter_0.3'
+unset output
+
+set output "plots/baseline_attack_with_rand_modelA_variants.png"
+
+set xlabel 'r$\epsilon + \alpha$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title 'Black-box adversarial success using difference of means samples + rand(0.05) on Model A variants'
+
+plot 'output_data/baseline_linf_md_rand_0.05_modelA.txt' u ($1+$2):3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.05_modelA.txt' u ($1+$2):3 with lines ls 1 title 'ModelA', \
+'output_data/baseline_linf_md_rand_0.05_modelA_adv.txt' u ($1+$2):3:(sprintf("%.1f", $3)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.05_modelA_adv.txt' u ($1+$2):3 with lines ls 2 title 'ModelA_adv_0.3', \
+'output_data/baseline_linf_md_rand_0.05_modelA_ens_0.3_linf_ACD.txt' u ($1+$2):3:(sprintf("%.1f", $3)) with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.05_modelA_ens_0.3_linf_ACD.txt' u ($1+$2):3 with lines ls 3 title 'ModelA_ens_0.3', \
+'output_data/baseline_linf_md_rand_0.05_modelA_adv_0.3_linf_iter.txt' u ($1+$2):3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.05_modelA_adv_0.3_linf_iter.txt' u ($1+$2):3 with lines ls 4 title 'ModelA_iter_0.3'
+unset output
+
+set output "plots/rand_attacks_l2_modelA_variants.png"
+
+set xlabel 'r$\alpha$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:9.0]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title 'Black-box adversarial success using random samples with l2 constraints on Model A variants'
+
+plot 'output_data/baseline_l2_md_rand_9.1_modelA.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_l2_md_rand_9.1_modelA.txt' u 2:3 with lines ls 1 title 'ModelA', \
+'output_data/baseline_l2_md_rand_9.1_modelA_adv.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_l2_md_rand_9.1_modelA_adv.txt' u 2:3 with lines ls 2 title 'ModelA_adv_0.3', \
+'output_data/baseline_l2_md_rand_9.1_modelA_ens_0.3_linf_ACD.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_l2_md_rand_9.1_modelA_ens_0.3_linf_ACD.txt' u 2:3 with lines ls 3 title 'ModelA_ens_0.3', \
+'output_data/baseline_l2_md_rand_9.1_modelA_adv_0.3_linf_iter.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_l2_md_rand_9.1_modelA_adv_0.3_linf_iter.txt' u 2:3 with lines ls 4 title 'ModelA_iter_0.3'
+unset output
+
+set output "plots/grad_est_attacks_linf_modelA.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title 'Black-box adversarial success using finite diference (\alpha=1.0) samples with linf constraints on Model A'
+
+plot 'output_data/query_based_un_linf_modelA_attack.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_linf_modelA_attack.txt' u 2:3 with lines ls 1 title 'finite diff', \
+'output_data/wb_modelA_linf_attack.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_modelA_linf_attack.txt' u 1:2 with lines ls 2 title 'wb FGSM'
+unset output

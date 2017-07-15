@@ -10,6 +10,7 @@ FLAGS = flags.FLAGS
 
 CLIP_MIN = 0
 CLIP_MAX = 1
+C_TRIAL = True
 
 def class_means(X, y):
 
@@ -124,18 +125,38 @@ def main(target_model_name):
     if args.norm == 'linf':
         eps_list = list(np.linspace(0.0, 0.1, 5))
         eps_list.extend(np.linspace(0.2, 0.5, 7))
+        # eps_list = [0.3]
     elif args.norm == 'l2':
         eps_list = list(np.linspace(0.0, 9.0, 28))
+        # eps_list = [6.0]
 
-    ofile = open('output_data/baseline_'+args.norm+'_md_'+str(target_model_name)+'.txt', 'a')
+    # ofile = open('output_data/baseline_'+args.norm+'_md_rand_'+str(args.alpha)+'_'+str(target_model_name)+'.txt', 'a')
 
     for eps in eps_list:
+        eps_orig = eps
+        if args.alpha > eps:
+            alpha = eps
+            eps = 0
+        elif eps >= args.alpha:
+            alpha = args.alpha
+            eps -= args.alpha
+
         adv_success = 0.0
         avg_l2_perturb = 0.0
         for i in range(FLAGS.NUM_CLASSES):
             curr_indices = np.where(Y_test_uncat == i)
-            X_test_curr = X_test[curr_indices]
+            X_test_ini = X_test[curr_indices]
             Y_test_curr = Y_test_uncat[curr_indices]
+            curr_len = len(X_test_ini)
+
+            random_perturb = np.random.randn(*X_test_ini.shape)
+
+            if args.norm == 'linf':
+                random_perturb_signed = np.sign(random_perturb)
+                X_test_curr = np.clip(X_test_ini + alpha * random_perturb_signed, CLIP_MIN, CLIP_MAX)
+            elif args.norm == 'l2':
+                random_perturb_unit = random_perturb/np.linalg.norm(random_perturb.reshape(curr_len,dim), axis=1)[:, None, None, None]
+                X_test_curr = np.clip(X_test_ini + alpha * random_perturb_unit, CLIP_MIN, CLIP_MAX)
 
             closest_class = int(closest_means[i])
 
@@ -143,17 +164,17 @@ def main(target_model_name):
 
             if args.norm == 'linf':
                 mean_diff_vec_signed = np.sign(mean_diff_vec)
-                perturb = eps * mean_diff_vec_signed
+                perturb = eps  * mean_diff_vec_signed
             elif args.norm == 'l2':
                 mean_diff_vec_unit = mean_diff_vec/np.linalg.norm(mean_diff_vec.reshape(dim))
                 perturb = eps * mean_diff_vec_unit
 
             X_adv = np.clip(X_test_curr + perturb, CLIP_MIN, CLIP_MAX)
-            if args.norm == 'linf':
-                # Getting the norm of the perturbation
-                perturb_norm = np.linalg.norm((X_adv-X_test_curr).reshape(len(X_test_curr), dim), axis=1)
-                perturb_norm_batch = np.mean(perturb_norm)
-                avg_l2_perturb += perturb_norm_batch
+
+            # Getting the norm of the perturbation
+            perturb_norm = np.linalg.norm((X_adv-X_test_ini).reshape(curr_len, dim), axis=1)
+            perturb_norm_batch = np.mean(perturb_norm)
+            avg_l2_perturb += perturb_norm_batch
 
             predictions_adv = K.get_session().run([prediction], feed_dict={x: X_adv, K.learning_phase(): 0})[0]
 
@@ -161,16 +182,17 @@ def main(target_model_name):
 
             for k in range(2):
                 adv_label = np.argmax(predictions_adv[k].reshape(1, FLAGS.NUM_CLASSES),1)
-                img.imsave( 'images/baseline/'+args.norm+'/md_{}_{}_{}_{}_{}.png'.format(
-                        i, k, adv_label, closest_class, eps),
+                img.imsave( 'images/baseline/'+args.norm+'/md_{}_{}_{}_{}_{}_{}.png'.format(
+                        i, k, adv_label, closest_class, eps, alpha),
                         X_adv[k].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS)*255, cmap='gray')
         err = 100.0 * adv_success/ len(X_test)
         avg_l2_perturb = avg_l2_perturb/FLAGS.NUM_CLASSES
 
-        print('{}, {}'.format(eps, err))
+        print('{}, {}, {}'.format(eps, alpha, err))
         print('{}'.format(avg_l2_perturb))
-        ofile.write('{:.2f} {:.2f} {:.2f} \n'.format(eps, err, avg_l2_perturb))
-    ofile.close()
+        # ofile.write('{:.2f} {:.2f} {:.2f} {:.2f} \n'.format(eps, alpha, err, avg_l2_perturb))
+    # ofile.write('\n \n')
+    # ofile.close()
 
 if __name__ == "__main__":
     import argparse
@@ -180,6 +202,8 @@ if __name__ == "__main__":
     #                         help="FGS attack scale")
     parser.add_argument("--norm", type=str, default='linf',
                             help="Norm constraint to use")
+    parser.add_argument("--alpha", type=float, default=0.0,
+                            help="Amount of randomness")
 
     args = parser.parse_args()
 
