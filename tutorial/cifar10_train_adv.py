@@ -79,7 +79,7 @@ def train():
     # Generate adversarial examples.
     noleak_labels = tf.argmax(logits, axis=1)
     noleak_loss = cifar10_reusable.loss(logits, noleak_labels)
-    grads, = tf.gradients(loss_benign, images)
+    grads, = tf.gradients(noleak_loss, images)
     perturbation = FLAGS.epsilon * tf.sign(grads)
     adv_images = tf.stop_gradient(tf.clip_by_value(images + perturbation, 0., 255.))
     tf.summary.image('adv_images', adv_images)
