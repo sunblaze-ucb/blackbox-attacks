@@ -79,11 +79,16 @@ def build_input(dataset, data_path, batch_size, mode):
   # %%% Add here.
 
   if mode == 'train':
-    raise 'wip'
-    image = tf.image.resize_image_with_crop_or_pad(
+    def distort(image):
+      image = tf.image.resize_image_with_crop_or_pad(
         image, image_size+4, image_size+4)
-    image = tf.random_crop(image, [image_size, image_size, 3])
-    image = tf.image.random_flip_left_right(image)
+      image = tf.random_crop(image, [image_size, image_size, 3])
+      image = tf.image.random_flip_left_right(image)
+      return image
+    image = distort(image)
+    image_adv_thin = distort(image_adv_thin)
+    image_adv_wide = distort(image_adv_wide)
+    image_adv_tutorial = distort(image_adv_tutorial)
     # Brightness/saturation/constrast provides small gains .2%~.5% on cifar.
     # image = tf.image.random_brightness(image, max_delta=63. / 255.)
     # image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
@@ -92,8 +97,8 @@ def build_input(dataset, data_path, batch_size, mode):
     example_queue = tf.RandomShuffleQueue(
         capacity=16 * batch_size,
         min_after_dequeue=8 * batch_size,
-        dtypes=[tf.float32, tf.int32], # %%% Add tf.float32.
-        shapes=[image_shape, [1]]) # %%% Add image_shape.
+        dtypes=[tf.float32, tf.float32, tf.float32, tf.float32, tf.int32], # %%% Add tf.float32.
+        shapes=[image_shape, image_shape, image_shape, image_shape, [1]]) # %%% Add image_shape.
     num_threads = 16
   else:
     image = tf.image.resize_image_with_crop_or_pad(
