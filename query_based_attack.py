@@ -17,7 +17,7 @@ FLAGS = flags.FLAGS
 
 RANDOM = True
 BATCH_SIZE = 100
-BATCH_EVAL_NUM = 100
+BATCH_EVAL_NUM = 1
 CLIP_MIN = 0
 CLIP_MAX = 1
 
@@ -72,7 +72,62 @@ def est_write_out(eps, success, avg_l2_perturb):
     ofile.close()
     return
 
-def estimated_grad_attack(X_test, x, targets, prediction, eps, dim):
+def xent_est(prediction, x, x_plus_i, x_minus_i, curr_target):
+    pred_plus = K.get_session().run([prediction], feed_dict={x: x_plus_i,
+                                                K.learning_phase(): 0})[0]
+    pred_plus_t = pred_plus[np.arange(BATCH_SIZE), list(curr_target)]
+    pred_minus = K.get_session().run([prediction], feed_dict={x: x_minus_i,
+                                                K.learning_phase(): 0})[0]
+    pred_minus_t = pred_minus[np.arange(BATCH_SIZE), list(curr_target)]
+    single_grad_est = (pred_plus_t - pred_minus_t)/args.delta
+
+    return single_grad_est
+
+def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim):
+    grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+    for j in range(dim):
+        basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+        row = int(j/FLAGS.IMAGE_COLS)
+        col = int(j % FLAGS.IMAGE_COLS)
+        basis_vec[:, row, col] = 1.
+        x_plus_i = np.clip(curr_sample + args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
+        x_minus_i = np.clip(curr_sample - args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
+        if args.CW_loss == 0:
+            single_grad_est = xent_est(prediction, x, x_plus_i, x_minus_i, curr_target)
+        grad_est[:, row, col] = single_grad_est.reshape((BATCH_SIZE,1))
+
+    # Getting gradient of the loss
+    if args.CW_loss == 0:
+        loss_grad = -1.0 * grad_est/p_t[:, None, None, None]
+
+    return loss_grad
+
+def one_shot_method(prediction, x, curr_sample, curr_target, p_t):
+    grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+    DELTA = np.random.randint(2, size=(BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+    np.place(DELTA, DELTA==0, -1)
+
+    y_plus = np.clip(curr_sample + args.delta * DELTA, CLIP_MIN, CLIP_MAX)
+    y_minus = np.clip(curr_sample - args.delta * DELTA, CLIP_MIN, CLIP_MAX)
+
+    if args.CW_loss == 0:
+        pred_plus = K.get_session().run([prediction], feed_dict={x: y_plus, K.learning_phase(): 0})[0]
+        pred_plus_t = pred_plus[np.arange(BATCH_SIZE), list(curr_target)]
+
+        pred_minus = K.get_session().run([prediction], feed_dict={x: y_minus, K.learning_phase(): 0})[0]
+        pred_minus_t = pred_minus[np.arange(BATCH_SIZE), list(curr_target)]
+
+        num_est = (pred_plus_t - pred_minus_t)
+
+    grad_est = num_est[:, None, None, None]/(args.delta * DELTA)
+
+    # Getting gradient of the loss
+    if args.CW_loss == 0:
+        loss_grad = -1.0 * grad_est/p_t[:, None, None, None]
+
+    return loss_grad
+
+def estimated_grad_attack(X_test, x, targets, prediction, logits, eps, dim):
     success = 0
     avg_l2_perturb = 0
     time1 = time.time()
@@ -88,11 +143,10 @@ def estimated_grad_attack(X_test, x, targets, prediction, eps, dim):
         p_t = curr_prediction[np.arange(BATCH_SIZE), list(curr_target)]
 
         if 'query_based' in args.method:
-            grad_est = finite_diff_method(prediction, x, curr_sample, curr_target, dim)
+            loss_grad = finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim)
         elif 'one_shot' in args.method:
-            grad_est = one_shot_method(prediction, x, curr_sample, curr_target)
-        # Getting gradient of the loss
-        loss_grad = -1.0 * grad_est/p_t[:, None, None, None]
+            loss_grad = one_shot_method(prediction, x, curr_sample, curr_target, p_t)
+
         # Getting signed gradient of loss
         if args.norm == 'linf':
             normed_loss_grad = np.sign(loss_grad)
@@ -175,46 +229,6 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, targets, targ
 
     return
 
-
-def finite_diff_method(prediction, x, curr_sample, curr_target, dim):
-    grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
-    for j in range(dim):
-        basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
-        row = int(j/FLAGS.IMAGE_COLS)
-        col = int(j % FLAGS.IMAGE_COLS)
-        basis_vec[:, row, col] = 1.
-        x_plus_i = np.clip(curr_sample + args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
-        x_minus_i = np.clip(curr_sample - args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
-        pred_plus = K.get_session().run([prediction], feed_dict={x: x_plus_i,
-                                                    K.learning_phase(): 0})[0]
-        pred_plus_t = pred_plus[np.arange(BATCH_SIZE), list(curr_target)]
-        pred_minus = K.get_session().run([prediction], feed_dict={x: x_minus_i,
-                                                    K.learning_phase(): 0})[0]
-        pred_minus_t = pred_minus[np.arange(BATCH_SIZE), list(curr_target)]
-        single_grad_est = (pred_plus_t - pred_minus_t)/args.delta
-        grad_est[:, row, col] = single_grad_est.reshape((BATCH_SIZE,1))
-
-    return grad_est
-
-def one_shot_method(prediction, x, curr_sample, curr_target):
-    grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
-    DELTA = np.random.randint(2, size=(BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
-    np.place(DELTA, DELTA==0, -1)
-
-    y_plus = np.clip(curr_sample + args.delta * DELTA, CLIP_MIN, CLIP_MAX)
-    pred_plus = K.get_session().run([prediction], feed_dict={x: y_plus, K.learning_phase(): 0})[0]
-    pred_plus_t = pred_plus[np.arange(BATCH_SIZE), list(curr_target)]
-
-    y_minus = np.clip(curr_sample - args.delta * DELTA, CLIP_MIN, CLIP_MAX)
-    pred_minus = K.get_session().run([prediction], feed_dict={x: y_minus, K.learning_phase(): 0})[0]
-    pred_minus_t = pred_minus[np.arange(BATCH_SIZE), list(curr_target)]
-
-    num_est = (pred_plus_t - pred_minus_t)
-    grad_est = num_est[:, None, None, None]/(args.delta * DELTA)
-
-    return grad_est
-
-
 def main(target_model_name, target=None):
     np.random.seed(0)
     tf.set_random_seed(0)
@@ -250,9 +264,9 @@ def main(target_model_name, target=None):
     targets_cat = np_utils.to_categorical(targets, FLAGS.NUM_CLASSES).astype(np.float32)
 
     if args.norm == 'linf':
-        eps_list = list(np.linspace(0.0, 0.1, 5))
-        eps_list.extend(np.linspace(0.2, 0.5, 7))
-        # eps_list = [0.3]
+        # eps_list = list(np.linspace(0.0, 0.1, 5))
+        # eps_list.extend(np.linspace(0.2, 0.5, 7))
+        eps_list = [0.3]
     elif args.norm == 'l2':
         eps_list = list(np.linspace(0.0, 9.0, 28))
         # eps_list = [5.0]
@@ -261,7 +275,7 @@ def main(target_model_name, target=None):
         white_box_fgsm(prediction, target_model, x, logits, y, X_test, targets,
                         targets_cat, eps, dim)
 
-        estimated_grad_attack(X_test, x, targets, prediction, eps, dim)
+        estimated_grad_attack(X_test, x, targets, prediction, logits, eps, dim)
 
 if __name__ == "__main__":
     import argparse
@@ -273,6 +287,8 @@ if __name__ == "__main__":
                         help="local perturbation")
     parser.add_argument("--norm", type=str, default='linf',
                             help="Norm to use for attack")
+    parser.add_argument("--CW_loss", type=int, default=0,
+                            help="Using CW loss instead of xent")
     args = parser.parse_args()
 
     target_model_name = basename(args.target_model)
