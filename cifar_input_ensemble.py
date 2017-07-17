@@ -74,6 +74,8 @@ def build_input(dataset, data_path, batch_size, mode):
     image = tf.cast(tf.reshape(decoded, image_shape), tf.float32)
     return image
   image_adv_thin = read_premade('static_adv_thin.raw')
+  image_adv_wide = read_premade('static_adv_wide.raw')
+  # %%% Add here.
 
   if mode == 'train':
     raise 'wip'
@@ -89,8 +91,8 @@ def build_input(dataset, data_path, batch_size, mode):
     example_queue = tf.RandomShuffleQueue(
         capacity=16 * batch_size,
         min_after_dequeue=8 * batch_size,
-        dtypes=[tf.float32, tf.int32],
-        shapes=[image_shape, [1]])
+        dtypes=[tf.float32, tf.int32], # %%% Add tf.float32.
+        shapes=[image_shape, [1]]) # %%% Add image_shape.
     num_threads = 16
   else:
     image = tf.image.resize_image_with_crop_or_pad(
@@ -98,16 +100,16 @@ def build_input(dataset, data_path, batch_size, mode):
 
     example_queue = tf.FIFOQueue(
         3 * batch_size,
-        dtypes=[tf.float32, tf.float32, tf.int32],
-        shapes=[image_shape, image_shape, [1]])
+        dtypes=[tf.float32, tf.float32, tf.float32, tf.int32], # %%% Add tf.float32.
+        shapes=[image_shape, image_shape, image_shape, [1]]) # %%% Add tf.float32.
     num_threads = 1
 
-  example_enqueue_op = example_queue.enqueue([image, image_adv_thin, label])
+  example_enqueue_op = example_queue.enqueue([image, image_adv_thin, image_adv_wide, label]) # %%% Add image.
   tf.train.add_queue_runner(tf.train.queue_runner.QueueRunner(
       example_queue, [example_enqueue_op] * num_threads))
 
   # Read 'batch' labels + images from the example queue.
-  images, images_adv_thin, labels = example_queue.dequeue_many(batch_size)
+  images, images_adv_thin, images_adv_wide, labels = example_queue.dequeue_many(batch_size) # %%% Add tensor.
   labels = tf.reshape(labels, [batch_size, 1])
   indices = tf.reshape(tf.range(0, batch_size, 1), [batch_size, 1])
   labels = tf.sparse_to_dense(
@@ -123,4 +125,4 @@ def build_input(dataset, data_path, batch_size, mode):
 
   # Display the training images in the visualizer.
   tf.summary.image('images', images)
-  return images, images_adv_thin, labels
+  return images, images_adv_thin, images_adv_wide, labels # %%% Add tensor.
