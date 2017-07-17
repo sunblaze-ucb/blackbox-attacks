@@ -1,4 +1,5 @@
 /cifar-10-batches-bin
+/.ipynb_checkpoints
 /log*
 /tutorial/train*
 terminal*.txt

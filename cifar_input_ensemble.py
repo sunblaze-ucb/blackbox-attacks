@@ -75,6 +75,7 @@ def build_input(dataset, data_path, batch_size, mode):
     return image
   image_adv_thin = read_premade('static_adv_thin.raw')
   image_adv_wide = read_premade('static_adv_wide.raw')
+  image_adv_tutorial = read_premade('static_adv_tutorial.raw')
   # %%% Add here.
 
   if mode == 'train':
@@ -100,16 +101,16 @@ def build_input(dataset, data_path, batch_size, mode):
 
     example_queue = tf.FIFOQueue(
         3 * batch_size,
-        dtypes=[tf.float32, tf.float32, tf.float32, tf.int32], # %%% Add tf.float32.
-        shapes=[image_shape, image_shape, image_shape, [1]]) # %%% Add tf.float32.
+        dtypes=[tf.float32, tf.float32, tf.float32, tf.float32, tf.int32], # %%% Add tf.float32.
+        shapes=[image_shape, image_shape, image_shape, image_shape, [1]]) # %%% Add tf.float32.
     num_threads = 1
 
-  example_enqueue_op = example_queue.enqueue([image, image_adv_thin, image_adv_wide, label]) # %%% Add image.
+  example_enqueue_op = example_queue.enqueue([image, image_adv_thin, image_adv_wide, image_adv_tutorial, label]) # %%% Add image.
   tf.train.add_queue_runner(tf.train.queue_runner.QueueRunner(
       example_queue, [example_enqueue_op] * num_threads))
 
   # Read 'batch' labels + images from the example queue.
-  images, images_adv_thin, images_adv_wide, labels = example_queue.dequeue_many(batch_size) # %%% Add tensor.
+  images, images_adv_thin, images_adv_wide, images_adv_tutorial, labels = example_queue.dequeue_many(batch_size) # %%% Add tensor.
   labels = tf.reshape(labels, [batch_size, 1])
   indices = tf.reshape(tf.range(0, batch_size, 1), [batch_size, 1])
   labels = tf.sparse_to_dense(
@@ -125,4 +126,4 @@ def build_input(dataset, data_path, batch_size, mode):
 
   # Display the training images in the visualizer.
   tf.summary.image('images', images)
-  return images, images_adv_thin, images_adv_wide, labels # %%% Add tensor.
+  return images, images_adv_thin, images_adv_wide, images_adv_tutorial, labels # %%% Add tensor.
