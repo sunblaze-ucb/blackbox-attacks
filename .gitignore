@@ -9,3 +9,4 @@ cifar10/*
 images/*
 resnet/images/*
 *.p
+output_data/*
