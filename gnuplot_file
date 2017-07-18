@@ -334,3 +334,51 @@ plot 'output_data/query_based_un_linf_modelA_ens_0.3_linf_ACD_attack.txt' u 2:3:
 'output_data/wb_modelA_ens_0.3_linf_ACD_linf_attack.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
 'output_data/wb_modelA_ens_0.3_linf_ACD_linf_attack.txt' u 1:2 with lines ls 2 title 'wb FGSM'
 unset output
+
+set output "plots/grad_est_attacks_cw_loss_linf_modelA.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title "Black-box adversarial success using finite difference CW loss (\alpha=0.01) samples \n with linf constraints on Model A"
+
+plot 'output_data/query_based_un_cw_linf_modelA.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_cw_linf_modelA.txt' u 2:3 with lines ls 1 title 'finite diff (CW loss)', \
+'output_data/wb_un_cw_linf_modelA.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_un_cw_linf_modelA.txt' u 1:2 with lines ls 2 title 'wb FGSM (CW loss)'
+unset output
+
+set output "plots/grad_est_attacks_cw_loss_linf_modelA_adv.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title "Black-box adversarial success using finite difference CW loss (\alpha=0.01) samples \n with linf constraints on Model A adv"
+
+plot 'output_data/query_based_un_cw_linf_modelA_adv.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_cw_linf_modelA_adv.txt' u 2:3 with lines ls 1 title 'finite diff (CW loss)', \
+'output_data/wb_un_cw_linf_modelA_adv.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_un_cw_linf_modelA_adv.txt' u 1:2 with lines ls 2 title 'wb FGSM (CW loss)'
+unset output
+
+set output "plots/grad_est_attacks_cw_loss_linf_modelA_ens.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title "Black-box adversarial success using finite difference CW loss (\alpha=0.01) samples \n with linf constraints on Model A ens_0.3_linf_ACD"
+
+plot 'output_data/query_based_un_cw_linf_modelA_ens_0.3_linf_ACD.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_cw_linf_modelA_ens_0.3_linf_ACD.txt' u 2:3 with lines ls 1 title 'finite diff (CW loss)', \
+'output_data/wb_un_cw_linf_modelA_ens_0.3_linf_ACD.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_un_cw_linf_modelA_ens_0.3_linf_ACD.txt' u 1:2 with lines ls 2 title 'wb FGSM (CW loss)'
+unset output
