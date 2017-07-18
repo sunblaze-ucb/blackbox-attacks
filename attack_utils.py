@@ -27,8 +27,8 @@ def gen_adv_loss(logits, y, loss='logloss', mean=False):
 
     if mean:
         out = K.mean(out)
-    else:
-        out = K.sum(out)
+    # else:
+    #     out = K.sum(out)
     return out
 
 
