@@ -56,8 +56,8 @@ def train(hps):
       FLAGS.dataset, FLAGS.train_data_path, hps.batch_size, FLAGS.mode)
   images_scaled = tf.map_fn(lambda image: tf.image.per_image_standardization(image), images)
 
-  adv_model = resnet_model_reusable.ResNet(hps, images_scaled, None, 'eval')
   def make_dynamic_adv_images():
+    adv_model = resnet_model_reusable.ResNet(hps, images_scaled, None, 'eval')
     adv_model._build_model()
     # Predict labels to use in no-label-leaking adversarial examples. Not in training mode.
     adv_model.labels = tf.stop_gradient(tf.one_hot(tf.argmax(adv_model.logits, axis=1), depth=hps.num_classes))
@@ -67,12 +67,14 @@ def train(hps):
     perturbation = FLAGS.epsilon * tf.sign(grads)
     dynamic_adv_images = tf.stop_gradient(tf.clip_by_value(images + perturbation, 0., 255.))
     return dynamic_adv_images
+  # The process freezes if we really do this conditionally.
+  dynamic_adv_images = make_dynamic_adv_images()
 
   # Choose a set of adversarial examples at random.
   adv_choice = tf.random_uniform([], maxval=3, dtype=tf.int32, name='adv_choice')
   poison = tf.fill([hps.batch_size, 32, 32, 3], float('NaN'))
   adv_images = tf.case([
-    (tf.equal(adv_choice, 0), make_dynamic_adv_images),
+    (tf.equal(adv_choice, 0), lambda: dynamic_adv_images),
     (tf.equal(adv_choice, 1), lambda: images_adv_thin),
     # images_adv_wide is held out
     (tf.equal(adv_choice, 2), lambda: images_adv_tutorial),
