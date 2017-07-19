@@ -494,3 +494,69 @@ plot 'output_data/query_based_1.0_cw_linf_modelA.txt' u 2:3:(sprintf("%.1f", $3)
 'output_data/wb_cw_linf_modelA.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
 'output_data/wb_cw_linf_modelA.txt' u 1:2 with lines ls 2 title 'wb FGSM (CW loss)'
 unset output
+
+set output "plots/finite_diff_baseline_linf_Model_A.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title 'Comparing adversarial success using various linf constrained strategies on Model A'
+
+plot 'output_data/baseline_linf_md_modelA.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_modelA.txt' u 1:2 with lines ls 1 title 'diff. of means', \
+'output_data/baseline_linf_md_rand_0.51_modelA.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.51_modelA.txt' u 2:3 with lines ls 2 title 'random', \
+'output_data/query_based_un_linf_modelA_attack.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_linf_modelA_attack.txt' u 2:3 with lines ls 3 title 'finite diff (xent loss)', \
+'output_data/query_based_un_cw_linf_modelA.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_cw_linf_modelA.txt' u 2:3 with lines ls 4 title 'finite diff (CW loss)', \
+'output_data/modelB_to_modelA.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 6 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelB_to_modelA.txt' u 1:2 with lines ls 6 title 'fgsm (Model B)'
+unset output
+
+set output "plots/finite_diff_baseline_linf_Model_A_adv.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title 'Comparing adversarial success using various linf constrained strategies on Model A adv'
+
+plot 'output_data/baseline_linf_md_modelA_adv.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_modelA_adv.txt' u 1:2 with lines ls 1 title 'diff. of means', \
+'output_data/baseline_linf_md_rand_0.51_modelA_adv.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.51_modelA_adv.txt' u 2:3 with lines ls 2 title 'random', \
+'output_data/query_based_un_linf_modelA_adv_attack.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_linf_modelA_adv_attack.txt' u 2:3 with lines ls 3 title 'finite diff (xent loss)', \
+'output_data/query_based_un_cw_linf_modelA_adv.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_cw_linf_modelA_adv.txt' u 2:3 with lines ls 4 title 'finite diff (CW loss)', \
+'output_data/modelB_to_modelA_adv.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 6 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelB_to_modelA_adv.txt' u 1:2 with lines ls 6 title 'fgsm (Model B)'
+unset output
+
+set output "plots/finite_diff_baseline_linf_Model_A_ens.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title 'Comparing adversarial success using various linf constrained strategies on Model A ens'
+
+plot 'output_data/baseline_linf_md_modelA_ens_0.3_linf_ACD.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_modelA_ens_0.3_linf_ACD.txt' u 1:2 with lines ls 1 title 'diff. of means', \
+'output_data/baseline_linf_md_rand_0.51_modelA_ens_0.3_linf_ACD.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/baseline_linf_md_rand_0.51_modelA_ens_0.3_linf_ACD.txt' u 2:3 with lines ls 2 title 'random', \
+'output_data/query_based_un_linf_modelA_ens_0.3_linf_ACD_attack.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_linf_modelA_ens_0.3_linf_ACD_attack.txt' u 2:3 with lines ls 3 title 'finite diff (xent loss)', \
+'output_data/query_based_un_cw_linf_modelA_ens_0.3_linf_ACD.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_cw_linf_modelA_ens_0.3_linf_ACD.txt' u 2:3 with lines ls 4 title 'finite diff (CW loss)', \
+'output_data/modelB_to_modelA_ens_0.3_linf_ACD.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 6 ps 2 offset character -1, character 1 notitle,\
+'output_data/modelB_to_modelA_ens_0.3_linf_ACD.txt' u 1:2 with lines ls 6 title 'fgsm (Model B)'
+unset output
