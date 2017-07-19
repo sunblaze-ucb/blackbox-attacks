@@ -32,7 +32,7 @@ set style line 6 lt rgb "#0000A0" lw 4 pt 4
 set style line 7 lt rgb "#0000A0" lw 4 pt 1
 set style line 8 lt rgb "#0000A0" lw 4 pt 2
 set style line 9 lt rgb "#0000A0" lw 4 pt 9
-set style line 10 lt rgb "#00AA55" lw 4 pt 9
+set style line 10 lt rgb "#000000" lw 4 pt 3
 set style line 25 lt rgb "#0000A0" lw 4 pt 5
 set style line 26 lt rgb "#5555DD" lw 4 pt 1
 set style line 27 lt rgb "#5555DD" lw 4 pt 6
@@ -502,7 +502,8 @@ set ylabel 'Adversarial success (\%)' offset 2
 set xrange [0:0.5]
 set yrange [0:100]
 # set margins 3, 1, 2, 2
-set key right bottom
+set key left top
+set key box width -6
 set title 'Comparing adversarial success using various linf constrained strategies on Model A'
 
 plot 'output_data/baseline_linf_md_modelA.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
@@ -514,7 +515,9 @@ plot 'output_data/baseline_linf_md_modelA.txt' u 1:2:(sprintf("%.1f", $2)) with 
 'output_data/query_based_un_cw_linf_modelA.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
 'output_data/query_based_un_cw_linf_modelA.txt' u 2:3 with lines ls 4 title 'finite diff (CW loss)', \
 'output_data/modelB_to_modelA.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 6 ps 2 offset character -1, character 1 notitle,\
-'output_data/modelB_to_modelA.txt' u 1:2 with lines ls 6 title 'fgsm (Model B)'
+'output_data/modelB_to_modelA.txt' u 1:2 with lines ls 6 title 'fgsm (Model B)',\
+'output_data/wb_un_cw_linf_modelA.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 10 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_un_cw_linf_modelA.txt' u 1:2 with lines ls 10 title 'wb FGSM (CW loss)'
 unset output
 
 set output "plots/finite_diff_baseline_linf_Model_A_adv.png"
@@ -524,7 +527,7 @@ set ylabel 'Adversarial success (\%)' offset 2
 set xrange [0:0.5]
 set yrange [0:100]
 # set margins 3, 1, 2, 2
-set key right bottom
+set key left top
 set title 'Comparing adversarial success using various linf constrained strategies on Model A adv'
 
 plot 'output_data/baseline_linf_md_modelA_adv.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
@@ -536,7 +539,9 @@ plot 'output_data/baseline_linf_md_modelA_adv.txt' u 1:2:(sprintf("%.1f", $2)) w
 'output_data/query_based_un_cw_linf_modelA_adv.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
 'output_data/query_based_un_cw_linf_modelA_adv.txt' u 2:3 with lines ls 4 title 'finite diff (CW loss)', \
 'output_data/modelB_to_modelA_adv.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 6 ps 2 offset character -1, character 1 notitle,\
-'output_data/modelB_to_modelA_adv.txt' u 1:2 with lines ls 6 title 'fgsm (Model B)'
+'output_data/modelB_to_modelA_adv.txt' u 1:2 with lines ls 6 title 'fgsm (Model B)',\
+'output_data/wb_un_cw_linf_modelA_adv.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 10 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_un_cw_linf_modelA_adv.txt' u 1:2 with lines ls 10 title 'wb FGSM (CW loss)'
 unset output
 
 set output "plots/finite_diff_baseline_linf_Model_A_ens.png"
@@ -546,7 +551,7 @@ set ylabel 'Adversarial success (\%)' offset 2
 set xrange [0:0.5]
 set yrange [0:100]
 # set margins 3, 1, 2, 2
-set key right bottom
+set key left top
 set title 'Comparing adversarial success using various linf constrained strategies on Model A ens'
 
 plot 'output_data/baseline_linf_md_modelA_ens_0.3_linf_ACD.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
@@ -558,5 +563,7 @@ plot 'output_data/baseline_linf_md_modelA_ens_0.3_linf_ACD.txt' u 1:2:(sprintf("
 'output_data/query_based_un_cw_linf_modelA_ens_0.3_linf_ACD.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
 'output_data/query_based_un_cw_linf_modelA_ens_0.3_linf_ACD.txt' u 2:3 with lines ls 4 title 'finite diff (CW loss)', \
 'output_data/modelB_to_modelA_ens_0.3_linf_ACD.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 6 ps 2 offset character -1, character 1 notitle,\
-'output_data/modelB_to_modelA_ens_0.3_linf_ACD.txt' u 1:2 with lines ls 6 title 'fgsm (Model B)'
+'output_data/modelB_to_modelA_ens_0.3_linf_ACD.txt' u 1:2 with lines ls 6 title 'fgsm (Model B)',\
+'output_data/wb_un_cw_linf_modelA_ens_0.3_linf_ACD.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 10 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_un_cw_linf_modelA_ens_0.3_linf_ACD.txt' u 1:2 with lines ls 10 title 'wb FGSM (CW loss)'
 unset output
