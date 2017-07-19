@@ -89,6 +89,8 @@ def xent_est(prediction, x, x_plus_i, x_minus_i, curr_target):
 def CW_est(logits, x, x_plus_i, x_minus_i, curr_sample, curr_target):
     curr_logits = K.get_session().run([logits], feed_dict={x: curr_sample,
                                                     K.learning_phase(): 0})[0]
+    # So that when max is taken, it returns max among classes apart from the
+    # target
     curr_logits[np.arange(BATCH_SIZE), list(curr_target)] = -1e4
     max_indices = np.argmax(curr_logits, 1)
     logit_plus = K.get_session().run([logits], feed_dict={x: x_plus_i,
@@ -327,7 +329,8 @@ def main(target_model_name, target=None):
         eps_list.extend(np.linspace(0.2, 0.5, 7))
         # eps_list = [0.3]
     elif args.norm == 'l2':
-        eps_list = list(np.linspace(0.0, 9.0, 28))
+        eps_list = list(np.linspace(0.0, 2.0, 5))
+        eps_list.extend(np.linspace(2.5, 9.0, 14))
         # eps_list = [5.0]
 
     for eps in eps_list:
