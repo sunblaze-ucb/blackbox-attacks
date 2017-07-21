@@ -10,7 +10,7 @@ import sys
 
 FLAGS = flags.FLAGS
 EVAL_FREQUENCY = 1000
-BATCH_SIZE = 100
+BATCH_SIZE = 64
 BATCH_EVAL_NUM = 100
 
 def batch_eval(tf_inputs, tf_outputs, numpy_inputs):
@@ -77,22 +77,22 @@ def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None, benign = Non
             loss = l2
         elif benign == 1:
             loss = 0.5*(l1+l2)
-    elif cross_lip is not None:
-        logit_grad = K.gradients(logits, [x])[1]
-	print K.int_shape(logit_grad)
-	l3 = tf.zeros([])
-	for i in range(10):
-	    logit_slice = tf.slice(logits, [0,i], [1,1])
-	   # print(K.int_shape(logit_slice))
-	    logit_loss = tf.reshape(logit_slice,[1])
-	    #print(K.int_shape(logit_loss))
-	    logit_slice_grad = K.gradients(logit_loss, [x])[0]
-	    #print(K.int_shape(logit_slice_grad))
-	    l3 = tf.add(l3, tf.reduce_sum(tf.square(logit_slice_grad)))
-	l3 = K.mean(l3)
-	logit_grad_norm = tf.reduce_sum(tf.square(logit_grad))
-	l2 = K.mean(logit_grad_norm)
-	loss = l1 + 10e-5 * l2
+    # elif cross_lip is not None:
+    #     logit_grad = K.gradients(logits, [x])[1]
+	#     print K.int_shape(logit_grad)
+	#     l3 = tf.zeros([])
+	#     for i in range(10):
+	#         logit_slice = tf.slice(logits, [0,i], [1,1])
+	#    # print(K.int_shape(logit_slice))
+	#         logit_loss = tf.reshape(logit_slice,[1])
+	#     #print(K.int_shape(logit_loss))
+	#         logit_slice_grad = K.gradients(logit_loss, [x])[0]
+	#     #print(K.int_shape(logit_slice_grad))
+	#         l3 = tf.add(l3, tf.reduce_sum(tf.square(logit_slice_grad)))
+	#     l3 = K.mean(l3)
+	#     logit_grad_norm = tf.reduce_sum(tf.square(logit_grad))
+	#     l2 = K.mean(logit_grad_norm)
+	#     loss = l1 + 10e-5 * l2
     else:
         l2 = tf.constant(0)
         loss = l1
@@ -101,7 +101,7 @@ def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None, benign = Non
 
     optimizer = tf.train.AdamOptimizer().minimize(loss)
 
-    # saver = tf.train.Saver(set(tf.all_variables()) - old_vars)
+    saver = tf.train.Saver(set(tf.all_variables()) - old_vars)
 
     # Run all the initializers to prepare the trainable parameters.
     K.get_session().run(tf.initialize_variables(
@@ -154,6 +154,11 @@ def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None, benign = Non
             print('Minibatch loss: %.3f (%.3f, %.3f)' % (curr_loss, curr_l1, curr_l2))
 
             print('Minibatch error: %.1f%%' % error_rate(curr_preds, batch_labels))
+
+        if epoch % 10 == 0 or (step == (num_steps-1)):
+            save_path = saver.save(K.get_session(), "/tmp/model.ckpt")
+            save_model(model, 'tmp/model.ckpt')
+            print("Model saved in file: %s" % 'model.ckpt')
 
         # if step % EVAL_FREQUENCY == 0:
         #     elapsed_time = time.time() - start_time
