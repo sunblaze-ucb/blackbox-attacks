@@ -54,8 +54,8 @@ def main(attack, target_model_name, source_model_names):
             print '{}: {:.1f}'.format(basename(name), err)
         return
 
-    eps_list = list(np.linspace(0.00,0.1,5))
-    eps_list.extend(np.linspace(0.2,0.5,4))
+    eps_list = list(np.linspace(0.0, 0.1, 5))
+    eps_list.extend(np.linspace(0.2, 0.5, 7))
 
     if args.eps is not None:
         eps_list = [args.eps]
@@ -69,7 +69,7 @@ def main(attack, target_model_name, source_model_names):
         grad = gen_grad(x, logits, y)
 
         ofile = open('output_data/'+basename(src_model_name)+'_to_'+basename(target_model_name)+'.txt', 'a')
-        ofile.write(basename(target_model_name)+'\n')
+        ofile.write(args.attack+'\n')
         for eps in eps_list:
             # take the random step in the RAND+FGSM
             if attack == "rand_fgs":
