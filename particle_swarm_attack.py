@@ -23,8 +23,8 @@ BATCH_EVAL_NUM = 100
 swarmsize = 100
 maxiter = 100
 omega = 0.5
-p_wt = 0.5
-s_wt = 0.5
+p_wt = 0.3
+s_wt = 0.7
 
 
 parser = argparse.ArgumentParser()

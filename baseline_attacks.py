@@ -130,7 +130,7 @@ def main(target_model_name):
         eps_list = list(np.linspace(0.0, 9.0, 28))
         # eps_list = [6.0]
 
-    # ofile = open('output_data/baseline_'+args.norm+'_md_rand_'+str(args.alpha)+'_'+str(target_model_name)+'.txt', 'a')
+    ofile = open('output_data/baseline_'+args.norm+'_md_rand_'+str(args.alpha)+'_'+str(target_model_name)+'.txt', 'a')
 
     for eps in eps_list:
         eps_orig = eps
@@ -190,9 +190,9 @@ def main(target_model_name):
 
         print('{}, {}, {}'.format(eps, alpha, err))
         print('{}'.format(avg_l2_perturb))
-        # ofile.write('{:.2f} {:.2f} {:.2f} {:.2f} \n'.format(eps, alpha, err, avg_l2_perturb))
+        ofile.write('{:.2f} {:.2f} {:.2f} {:.2f} \n'.format(eps, alpha, err, avg_l2_perturb))
     # ofile.write('\n \n')
-    # ofile.close()
+    ofile.close()
 
 if __name__ == "__main__":
     import argparse

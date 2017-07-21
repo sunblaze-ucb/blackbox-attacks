@@ -17,7 +17,7 @@ FLAGS = flags.FLAGS
 
 RANDOM = True
 BATCH_SIZE = 100
-BATCH_EVAL_NUM = 100
+BATCH_EVAL_NUM = 1
 CLIP_MIN = 0
 CLIP_MAX = 1
 
@@ -26,8 +26,8 @@ def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
     for k in range(30):
         adv_label_wb = np.argmax(adv_pred_np[k].reshape(1, FLAGS.NUM_CLASSES),1)
         if adv_label_wb[0] != targets[k]:
-            img.imsave( 'images/wb/'+args.norm+'/'+args.loss_type+'{}_{}_{}_{}.png'.format(target_model_name,
-                adv_label_wb, targets[k], eps),
+            img.imsave( 'images/wb/'+args.norm+'/'+args.loss_type+'{}_{}_{}_{}_{}.png'.format(target_model_name,
+                adv_label_wb, targets[k], eps, args.alpha),
                 X_adv_t[k].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS)*255, cmap='gray')
             img_count += 1
         if img_count >=10:
@@ -41,8 +41,8 @@ def est_img_save(i, adv_prediction, curr_target, eps, x_adv):
             adv_label = np.argmax(adv_prediction[k].reshape(1, FLAGS.NUM_CLASSES),1)
             if adv_label[0] != curr_target[k]:
                 img.imsave( 'images/'+args.method+'/'+args.norm+'/'+args.loss_type+
-                                '_{}_{}_{}_{}_{}.png'.format(target_model_name,
-                                adv_label, curr_target[k], eps, args.delta),
+                                '_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
+                                adv_label, curr_target[k], eps, args.delta, args.alpha),
                     x_adv[k].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS)*255, cmap='gray')
                 img_count += 1
             if img_count >= 10:
@@ -56,9 +56,13 @@ def wb_write_out(eps, white_box_error, wb_norm):
         print('Fraction of targets achieved (white-box) for {}: {}'.format(target, white_box_error))
     else:
         if '_un' in args.method:
-            ofile = open('output_data/wb_un_'+args.loss_type+'_'+args.norm+'_'+target_model_name+'.txt','a')
+            filename = 'output_data/wb_un_'+args.loss_type+'_'+args.norm+'_'+target_model_name
         else:
-            ofile = open('output_data/wb_'+args.loss_type+'_'+args.norm+'_'+target_model_name+'.txt','a')
+            filename = 'output_data/wb_'+args.loss_type+'_'+args.norm+'_'+target_model_name
+        if args.alpha != 0.0:
+            filename += '{:.2f}_rand'.format(args.alpha)
+        filename += '.txt'
+        ofile = open(filename,'a')
         ofile.write('{} {} {} \n'.format(eps, white_box_error, wb_norm))
         print('Fraction of targets achieved (white-box): {}'.format(white_box_error))
     return
@@ -69,7 +73,11 @@ def est_write_out(eps, success, avg_l2_perturb):
         ofile.write(' {} \n'.format(success))
         print('Fraction of targets achieved (query-based) with {} for {}: {}'.format(target_model_name, target, success))
     else:
-        ofile = open('output_data/'+args.method+'_'+args.loss_type+'_'+args.norm+'_'+target_model_name+'.txt','a')
+        filename = 'output_data/'+args.method+'_'+args.loss_type+'_'+args.norm+'_'+target_model_name
+        if args.alpha != 0.0:
+            filename += '{:.2f}_rand'.format(args.alpha)
+        filename += '.txt'
+        ofile = open(filename, 'a')
         ofile.write('{} {} {} {}\n'.format(args.delta, eps, success, avg_l2_perturb))
         print('Fraction of targets achieved (query-based): {}'.format(success))
     ofile.close()
@@ -173,7 +181,7 @@ def one_shot_method(prediction, x, curr_sample, curr_target, p_t):
 
     return loss_grad
 
-def estimated_grad_attack(X_test, x, targets, prediction, logits, eps, dim):
+def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, eps, dim):
     success = 0
     avg_l2_perturb = 0
     time1 = time.time()
@@ -181,6 +189,7 @@ def estimated_grad_attack(X_test, x, targets, prediction, logits, eps, dim):
         if i % 10 ==0:
             print('{}, {}'.format(i, eps))
         curr_sample = X_test[i*BATCH_SIZE:(i+1)*BATCH_SIZE].reshape((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, 1))
+        curr_sample_ini = X_test_ini[i*BATCH_SIZE:(i+1)*BATCH_SIZE].reshape((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, 1))
 
         curr_target = targets[i*BATCH_SIZE:(i+1)*BATCH_SIZE]
 
@@ -202,16 +211,17 @@ def estimated_grad_attack(X_test, x, targets, prediction, logits, eps, dim):
             normed_loss_grad = np.zeros_like(curr_sample)
             normed_loss_grad[indices] = loss_grad[indices]/grad_norm[indices, None, None, None]
 
+        eps_mod = eps - args.alpha
         if args.loss_type == 'xent':
             if '_un' in args.method:
-                x_adv = np.clip(curr_sample + eps * normed_loss_grad, 0, 1)
+                x_adv = np.clip(curr_sample + eps_mod * normed_loss_grad, 0, 1)
             else:
-                x_adv = np.clip(curr_sample - eps * normed_loss_grad, 0, 1)
+                x_adv = np.clip(curr_sample - eps_mod * normed_loss_grad, 0, 1)
         elif args.loss_type == 'cw':
-            x_adv = np.clip(curr_sample - eps * normed_loss_grad, 0, 1)
+            x_adv = np.clip(curr_sample - eps_mod * normed_loss_grad, 0, 1)
 
         # Getting the norm of the perturbation
-        perturb_norm = np.linalg.norm((x_adv-curr_sample).reshape(BATCH_SIZE, dim), axis=1)
+        perturb_norm = np.linalg.norm((x_adv-curr_sample_ini).reshape(BATCH_SIZE, dim), axis=1)
         perturb_norm_batch = np.mean(perturb_norm)
         avg_l2_perturb += perturb_norm_batch
 
@@ -236,7 +246,7 @@ def estimated_grad_attack(X_test, x, targets, prediction, logits, eps, dim):
     return
 
 
-def white_box_fgsm(prediction, target_model, x, logits, y, X_test, targets, targets_cat, eps, dim):
+def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim):
 
     #Get gradient from model
     if args.loss_type == 'xent':
@@ -257,7 +267,7 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, targets, targ
         normed_grad = K.l2_normalize(grad, axis = (1,2,3))
 
     # Multiply by constant epsilon
-    scaled_grad = eps * normed_grad
+    scaled_grad = (eps - args.alpha) * normed_grad
 
     # Add perturbation to original example to obtain adversarial example
     if args.loss_type == 'xent':
@@ -272,6 +282,8 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, targets, targ
 
     X_test_slice = X_test[:BATCH_SIZE*BATCH_EVAL_NUM]
 
+    X_test_ini_slice = X_test_ini[:BATCH_SIZE*BATCH_EVAL_NUM]
+
     X_adv_t = K.get_session().run([adv_x_t], feed_dict={x: X_test_slice, y: targets_cat ,K.learning_phase(): 0})[0]
     # batch_eval([x, y], [adv_x_t], [X_test_slice, targets_cat])[0]
 
@@ -283,7 +295,7 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, targets, targ
     if '_un' not in args.method:
         white_box_error = 100.0 - white_box_error
 
-    wb_norm = np.mean(np.linalg.norm((X_adv_t-X_test_slice).reshape(BATCH_SIZE*BATCH_EVAL_NUM, dim), axis=1))
+    wb_norm = np.mean(np.linalg.norm((X_adv_t-X_test_ini_slice).reshape(BATCH_SIZE*BATCH_EVAL_NUM, dim), axis=1))
     print('Average white-box l2 perturbation: {}'.format(wb_norm))
 
     wb_write_out(eps, white_box_error, wb_norm)
@@ -303,7 +315,7 @@ def main(target_model_name, target=None):
 
     dim = int(FLAGS.IMAGE_ROWS*FLAGS.IMAGE_COLS)
 
-    _, _, X_test, Y_test = data_mnist()
+    _, _, X_test_ini, Y_test = data_mnist()
     print('Loaded data')
 
     # target model for crafting adversarial examples
@@ -325,19 +337,28 @@ def main(target_model_name, target=None):
     targets_cat = np_utils.to_categorical(targets, FLAGS.NUM_CLASSES).astype(np.float32)
 
     if args.norm == 'linf':
-        eps_list = list(np.linspace(0.0, 0.1, 5))
-        eps_list.extend(np.linspace(0.2, 0.5, 7))
-        # eps_list = [0.3]
+        # eps_list = list(np.linspace(0.0, 0.1, 5))
+        # eps_list.extend(np.linspace(0.2, 0.5, 7))
+        eps_list = [0.3]
     elif args.norm == 'l2':
         eps_list = list(np.linspace(0.0, 2.0, 5))
         eps_list.extend(np.linspace(2.5, 9.0, 14))
         # eps_list = [5.0]
 
+    random_perturb = np.random.randn(*X_test_ini.shape)
+
+    if args.norm == 'linf':
+        random_perturb_signed = np.sign(random_perturb)
+        X_test = np.clip(X_test_ini + args.alpha * random_perturb_signed, CLIP_MIN, CLIP_MAX)
+    elif args.norm == 'l2':
+        random_perturb_unit = random_perturb/np.linalg.norm(random_perturb.reshape(curr_len,dim), axis=1)[:, None, None, None]
+        X_test = np.clip(X_test_ini + args.alpha * random_perturb_unit, CLIP_MIN, CLIP_MAX)
+
     for eps in eps_list:
-        white_box_fgsm(prediction, target_model, x, logits, y, X_test, targets,
+        white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets,
                         targets_cat, eps, dim)
 
-        estimated_grad_attack(X_test, x, targets, prediction, logits, eps, dim)
+        estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, eps, dim)
 
 if __name__ == "__main__":
     import argparse
@@ -353,6 +374,9 @@ if __name__ == "__main__":
                             help="Choosing which type of loss to use")
     parser.add_argument("--conf", type=float, default=0.0,
                                 help="Strength of CW sample")
+    parser.add_argument("--alpha", type=float, default=0.0,
+                            help="Strength of random perturbation")
+
     args = parser.parse_args()
 
     target_model_name = basename(args.target_model)
