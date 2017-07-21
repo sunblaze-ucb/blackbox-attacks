@@ -1,0 +1,135 @@
+# set terminal epslatex size 8cm, 6cm
+set terminal png size 800,600 noenhanced
+
+# Line style for axes
+set style line 80 lt rgb "#808080"
+
+# Line style for grid
+set style line 81 lt 0  # dashed
+set style line 81 lt rgb "#808080"  # grey
+
+set grid back linestyle 81
+set border 3 back linestyle 80 # Remove border on top and right.  These
+             # borders are useless and make it harder
+             # to see plotted lines near the border.
+    # Also, put it in grey; no need for so much emphasis on a border.
+set xtics nomirror
+set ytics nomirror
+
+#set log x
+#set mxtics 10    # Makes logscale look good.
+
+# Line styles: try to pick pleasing colors, rather
+# than strictly primary colors or hard-to-see colors
+# like gnuplot's default yellow.  Make the lines thick
+# so they're easy to see in small plots in papers.
+set style line 1 lt rgb "#AA0000" lw 4 pt 1
+set style line 2 lt rgb "#00AA00" lw 4 pt 6
+set style line 3 lt rgb "#5555DD" lw 4 pt 2
+set style line 4 lt rgb "#FF5500" lw 4 pt 9
+set style line 5 lt rgb "#00AA55" lw 4 pt 5
+set style line 6 lt rgb "#0000A0" lw 4 pt 4
+set style line 7 lt rgb "#0000A0" lw 4 pt 1
+set style line 8 lt rgb "#0000A0" lw 4 pt 2
+set style line 9 lt rgb "#0000A0" lw 4 pt 9
+set style line 10 lt rgb "#000000" lw 4 pt 3
+set style line 25 lt rgb "#0000A0" lw 4 pt 5
+set style line 26 lt rgb "#5555DD" lw 4 pt 1
+set style line 27 lt rgb "#5555DD" lw 4 pt 6
+set style line 28 lt rgb "#5555DD" lw 4 pt 9
+set style line 29 lt rgb "#5555DD" lw 4 pt 5
+set style line 30 lt rgb "#5555DD" lw 4 pt 4
+set style line 31 lt rgb "#AA0000" lw 4 pt 6
+set style line 32 lt rgb "#AA0000" lw 4 pt 2
+set style line 33 lt rgb "#AA0000" lw 4 pt 9
+set style line 34 lt rgb "#AA0000" lw 4 pt 5
+
+
+
+set style line 11 lt rgb "#AA0000" lw 4
+set style line 12 lt rgb "#00AA00" lw 4
+set style line 13 lt rgb "#5555DD" lw 4
+set style line 14 lt rgb "#FF5500" lw 4
+set style line 15 lt rgb "#00AA55" lw 4
+set style line 16 lt rgb "#0000A0" lw 4
+set style line 17 lt rgb "#023FA5" lw 4
+set style line 18 lt rgb "#8E063B" lw 4
+set style line 19 lt rgb "#4A6FE3" lw 4
+set style line 20 lt rgb "#D33F6A" lw 4
+set style line 21 lt rgb "#12C638" lw 4
+set style line 22 lt rgb "#EF9708" lw 4
+set style line 23 lt rgb "#0FCFC0" lw 4
+set style line 24 lt rgb "#F79CD4" lw 4
+
+# {2,63,165}    "#023FA5"
+# {142,6,59},   "#8E063B"
+# {74,111,227}  "#4A6FE3"
+# {211,63,106}, "#D33F6A"
+# {17,198,56}   "#12C638"
+# {239,151,8},  "#EF9708"
+# {15,207,192}  "#0FCFC0"
+# {247,156,212} "#F79CD4"\
+
+set output "plots/grad_est_attacks_cw_loss_linf_rand_modelA.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title "Black-box adversarial success using finite difference CW loss (\alpha=0.01) samples \n with linf constraints and rand(0.05) on Model A"
+
+plot 'output_data/query_based_un_cw_linf_modelA0.05_rand.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_cw_linf_modelA0.05_rand.txt' u 2:3 with lines ls 1 title 'finite diff (CW loss)', \
+'output_data/wb_un_cw_linf_modelA0.05_rand.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_un_cw_linf_modelA0.05_rand.txt' u 1:2 with lines ls 2 title 'wb FGSM (CW loss)'
+unset output
+
+set output "plots/grad_est_attacks_cw_loss_linf_rand_modelA_adv.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title "Black-box adversarial success using finite difference CW loss (\alpha=0.01) samples \n with linf constraints and rand(0.05) on Model A adv"
+
+plot 'output_data/query_based_un_cw_linf_modelA_adv0.05_rand.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_cw_linf_modelA_adv0.05_rand.txt' u 2:3 with lines ls 1 title 'finite diff (CW loss)', \
+'output_data/wb_un_cw_linf_modelA_adv0.05_rand.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_un_cw_linf_modelA_adv0.05_rand.txt' u 1:2 with lines ls 2 title 'wb FGSM (CW loss)'
+unset output
+
+set output "plots/grad_est_attacks_cw_loss_linf_modelA_ens_0.3_linf_ACD.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title "Black-box adversarial success using finite difference CW loss (\alpha=0.01) samples \n with linf constraints and rand(0.05) on Model A ens"
+
+plot 'output_data/query_based_un_cw_linf_modelA_ens_0.3_linf_ACD0.05_rand.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_cw_linf_modelA_ens_0.3_linf_ACD0.05_rand.txt' u 2:3 with lines ls 1 title 'finite diff (CW loss)', \
+'output_data/wb_un_cw_linf_modelA_ens_0.3_linf_ACD0.05_rand.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_un_cw_linf_modelA_ens_0.3_linf_ACD0.05_rand.txt' u 1:2 with lines ls 2 title 'wb FGSM (CW loss)'
+unset output
+
+set output "plots/grad_est_attacks_cw_loss_linf_rand_modelA_adv_iter.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key right bottom
+set title "Black-box adversarial success using finite difference CW loss (\alpha=0.01) samples \n with linf constraints and rand(0.05) on Model A adv iter"
+
+plot 'output_data/query_based_un_cw_linf_modelA_adv_0.3_linf_iter0.05_rand.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/query_based_un_cw_linf_modelA_adv_0.3_linf_iter0.05_rand.txt' u 2:3 with lines ls 1 title 'finite diff (CW loss)', \
+'output_data/wb_un_cw_linf_modelA_adv_0.3_linf_iter0.05_rand.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/wb_un_cw_linf_modelA_adv_0.3_linf_iter0.05_rand.txt' u 1:2 with lines ls 2 title 'wb FGSM (CW loss)'
+unset output
