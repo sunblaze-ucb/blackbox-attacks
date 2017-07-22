@@ -20,6 +20,7 @@ BATCH_SIZE = 100
 BATCH_EVAL_NUM = 1
 CLIP_MIN = 0
 CLIP_MAX = 1
+FEATURE_GROUP_SIZE = 7
 
 def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
     img_count = 0
@@ -41,8 +42,9 @@ def est_img_save(i, adv_prediction, curr_target, eps, x_adv):
             adv_label = np.argmax(adv_prediction[k].reshape(1, FLAGS.NUM_CLASSES),1)
             if adv_label[0] != curr_target[k]:
                 img.imsave( 'images/'+args.method+'/'+args.norm+'/'+args.loss_type+
-                                '_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
-                                adv_label, curr_target[k], eps, args.delta, args.alpha),
+                                '_{}_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
+                                adv_label, curr_target[k], eps, args.delta, args.alpha,
+                                FEATURE_GROUP_SIZE),
                     x_adv[k].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS)*255, cmap='gray')
                 img_count += 1
             if img_count >= 10:
@@ -63,7 +65,7 @@ def wb_write_out(eps, white_box_error, wb_norm):
             filename += '{:.2f}_rand'.format(args.alpha)
         filename += '.txt'
         ofile = open(filename,'a')
-        ofile.write('{} {} {} \n'.format(eps, white_box_error, wb_norm))
+        # ofile.write('{} {} {} \n'.format(eps, white_box_error, wb_norm))
         print('Fraction of targets achieved (white-box): {}'.format(white_box_error))
     return
 
@@ -78,7 +80,7 @@ def est_write_out(eps, success, avg_l2_perturb):
             filename += '{:.2f}_rand'.format(args.alpha)
         filename += '.txt'
         ofile = open(filename, 'a')
-        ofile.write('{} {} {} {}\n'.format(args.delta, eps, success, avg_l2_perturb))
+        # ofile.write('{} {} {} {}\n'.format(args.delta, eps, success, avg_l2_perturb))
         print('Fraction of targets achieved (query-based): {}'.format(success))
     ofile.close()
     return
@@ -121,11 +123,19 @@ def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim
     grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
     logits_np = K.get_session().run([logits], feed_dict={x: curr_sample,
                                                     K.learning_phase(): 0})[0]
-    for j in range(dim):
+    random_indices = np.random.permutation(dim)
+    num_groups = dim / FEATURE_GROUP_SIZE
+    print(num_groups)
+    for j in range(num_groups):
         basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
-        row = int(j/FLAGS.IMAGE_COLS)
-        col = int(j % FLAGS.IMAGE_COLS)
-        basis_vec[:, row, col] = 1.
+        if j != num_groups-1:
+            curr_indices = random_indices[j*FEATURE_GROUP_SIZE:(j+1)*FEATURE_GROUP_SIZE]
+        elif j == num_groups-1:
+            curr_indices = random_indices[j*FEATURE_GROUP_SIZE:]
+        row = curr_indices/FLAGS.IMAGE_COLS
+        col = curr_indices % FLAGS.IMAGE_COLS
+        for i in range(len(curr_indices)):
+            basis_vec[:, row[i], col[i]] = 1.
         x_plus_i = np.clip(curr_sample + args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
         x_minus_i = np.clip(curr_sample - args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
         if args.loss_type == 'cw':
@@ -137,7 +147,8 @@ def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim
                 single_grad_est = logit_max_grad_est - logit_t_grad_est
         elif args.loss_type == 'xent':
             single_grad_est = xent_est(prediction, x, x_plus_i, x_minus_i, curr_target)
-        grad_est[:, row, col] = single_grad_est.reshape((BATCH_SIZE,1))
+        for i in range(len(curr_indices)):
+            grad_est[:, row[i], col[i]] = single_grad_est.reshape((BATCH_SIZE,1))
     # Getting gradient of the loss
     if args.loss_type == 'xent':
         loss_grad = -1.0 * grad_est/p_t[:, None, None, None]
