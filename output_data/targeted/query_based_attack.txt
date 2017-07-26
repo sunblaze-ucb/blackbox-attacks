@@ -1,0 +1,33 @@
+
+White-box, modelA, 0.3 : 36.05 
+Query based 0.01, modelA, 0.3 : 36.72 
+White-box, modelA, 0.3 : 36.05 
+Query based 0.0001, modelA, 0.3 : 36.74 
+White-box, modelA, 0.3 : 36.05 
+Query based 0.1, modelA, 0.3 : 36.87 
+White-box, modelB, 0.3 : 35.65 
+Query based 0.01, modelB, 0.3 : 36.52 
+White-box, modelA, 0.3 : 36.05 
+Query based 0.01, modelA, 0.3 : 36.72 
+White-box, modelA, 0.2 : 31.62 
+Query based 0.01, modelA, 0.2 : 31.92
+White-box, modelA, 0.3 : 30.0 
+Query based 0.01, modelA, 0.3 : 29.0 
+White-box, modelA, 0.3 : 30.0 
+Query based 0.01, modelA, 0.3 : 29.0 
+White-box, modelA, 0.3 : 30.0 
+Query based 0.01, modelA, 0.3 : 29.0 
+White-box, modelA_adv, 0.3 : 6.0 
+Query based 0.01, modelA_adv, 0.3 : 7.0 
+White-box, modelA_adv, 0.3 : 6.0 
+Query based 0.1, modelA_adv, 0.3 : 7.0 
+White-box, modelA_adv, 0.2 : 6.0 
+Query based 0.01, modelA_adv, 0.2 : 6.0 
+White-box, modelA_adv, 0.4 : 3.0 
+Query based 0.01, modelA_adv, 0.4 : 6.0 
+White-box, modelA, 0.3 : 36.05 
+Query based 1.0, modelA, 0.3 : 33.75 
+White-box, modelA_adv, 0.3 : 9.99 
+Query based 0.1, modelA_adv, 0.3 : 10.3 
+White-box, modelA_adv, 0.3 : 9.99 
+Query based 1.0, modelA_adv, 0.3 : 12.12 
