@@ -9,8 +9,6 @@
 
 import tensorflow as tf
 import numpy as np
-from tensorflow.python.platform import flags
-import keras.backend as K
 
 MAX_ITERATIONS = 1000   # number of iterations to perform gradient descent
 ABORT_EARLY = True      # abort gradient descent upon first valid solution
@@ -20,9 +18,12 @@ LARGEST_CONST = 2e+1    # the largest value of c to go up to before giving up
 TARGETED = True         # should we target one specific class? or just be wrong?
 CONST_FACTOR = 10.0     # f>1, rate at which we increase constant, smaller better
 CONFIDENCE = 0          # how strong the adversarial example should be
-EPS = 0.3
+EPS = 8.
 
-FLAGS = flags.FLAGS
+IMAGE_ROWS = 32
+IMAGE_COLS = 32
+NUM_CHANNELS = 3
+NUM_CLASSES = 10
 
 
 class CarliniLi:
@@ -77,7 +78,7 @@ class CarliniLi:
             else:
                 return (pred != y)
 
-        shape = (1, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS)
+        shape = (1, IMAGE_ROWS, IMAGE_COLS, NUM_CHANNELS)
 
         # the variable to optimize over
         modifier = tf.Variable(np.zeros(shape,dtype=np.float32))
@@ -85,13 +86,14 @@ class CarliniLi:
         tau = tf.placeholder(tf.float32, [])
         simg = tf.placeholder(tf.float32, shape)
         timg = tf.placeholder(tf.float32, shape)
-        tlab = tf.placeholder(tf.float32, (1, FLAGS.NUM_CLASSES))
+        tlab = tf.placeholder(tf.float32, (1, NUM_CLASSES))
         const = tf.placeholder(tf.float32, [])
 
-        newimg = tf.clip_by_value(simg + modifier, 0, 1)
+        newimg = tf.clip_by_value(simg + modifier, 0, 255)
 
         output = model(newimg)
         orig_output = model(timg)
+        output_softmax = tf.nn.softmax(output)
 
         real = tf.reduce_sum((tlab)*output)
         other = tf.reduce_max((1-tlab)*output - (tlab*10000))
@@ -133,8 +135,7 @@ class CarliniLi:
                                tlab:labs,
                                tau: tt,
                                simg: starts,
-                               const: CONST,
-                               K.learning_phase(): 0}
+                               const: CONST}
 
                     #if step % (self.MAX_ITERATIONS//10) == 0:
                     #    print(step, sess.run((loss,loss1,loss2),feed_dict=feed_dict))
@@ -144,7 +145,7 @@ class CarliniLi:
 
                     # it worked
                     if works < .0001*CONST and (self.ABORT_EARLY or step == CONST-1):
-                        get = sess.run(K.softmax(output), feed_dict=feed_dict)
+                        get = sess.run(output_softmax, feed_dict=feed_dict)
                         works = compare(get, labs)
                         if works:
                             scores, origscores, nimg = sess.run((output,orig_output,newimg),feed_dict=feed_dict)
@@ -188,7 +189,7 @@ class CarliniLi:
         """
 
         # the previous image
-        prev = np.copy(img).reshape((1, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+        prev = np.copy(img).reshape((1, IMAGE_ROWS, IMAGE_COLS, NUM_CHANNELS))
         tau = self.EPS
         const = self.INITIAL_CONST
 
