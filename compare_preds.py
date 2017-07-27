@@ -9,7 +9,7 @@ b = np.load(sys.argv[2])
 
 if len(sys.argv) >= 4:
     offset = int(sys.argv[3])
-    count = 1000
+    count = len(b)
     a = a[offset:offset+count]
 
 assert len(a) == len(b)
