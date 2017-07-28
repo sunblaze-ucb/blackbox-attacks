@@ -154,3 +154,47 @@ predict_and_compare() { # src dst ckpt_dir [offset]
 # predict_and_compare tutorial_fgsm_24 wide_ensadv log_ensadv_wide
 # predict_and_compare thin_fgsm_24 tutorial_adv tutorial/train_adv
 # predict_and_compare thin_fgsm_24 tutorial_ensadv tutorial/train_ensadv
+
+# transfer matrix on adversarially trained models
+
+# predict_and_compare thin_fgsm_8 thin_adv log
+# predict_and_compare thin_fgsm_8 wide_adv log_wide
+# predict_and_compare wide_fgsm_8 wide_adv log_wide
+# predict_and_compare wide_fgsm_8 tutorial_adv tutorial/train
+# predict_and_compare tutorial_fgsm_8 thin_adv log
+# predict_and_compare tutorial_fgsm_8 tutorial_adv tutorial/train
+
+# predict_and_compare thin_fgsm_12 thin_adv log
+# predict_and_compare thin_fgsm_12 wide_adv log_wide
+# predict_and_compare wide_fgsm_12 wide_adv log_wide
+# predict_and_compare wide_fgsm_12 tutorial_adv tutorial/train
+# predict_and_compare tutorial_fgsm_12 thin_adv log
+# predict_and_compare tutorial_fgsm_12 tutorial_adv tutorial/train
+
+# predict_and_compare thin_fgsm_16 thin_adv log
+# predict_and_compare thin_fgsm_16 wide_adv log_wide
+# predict_and_compare wide_fgsm_16 wide_adv log_wide
+# predict_and_compare wide_fgsm_16 tutorial_adv tutorial/train
+# predict_and_compare tutorial_fgsm_16 thin_adv log
+# predict_and_compare tutorial_fgsm_16 tutorial_adv tutorial/train
+
+predict_and_compare thin_opt_8 thin_adv log 6705
+predict_and_compare thin_opt_8 wide_adv log_wide 6705
+predict_and_compare wide_opt_8 wide_adv log_wide 6705
+predict_and_compare wide_opt_8 tutorial_adv tutorial/train 6705
+predict_and_compare tutorial_opt_8 thin_adv log 6705
+predict_and_compare tutorial_opt_8 tutorial_adv tutorial/train 6705
+
+predict_and_compare thin_opt_12 thin_adv log 6705
+predict_and_compare thin_opt_12 wide_adv log_wide 6705
+predict_and_compare wide_opt_12 wide_adv log_wide 6705
+predict_and_compare wide_opt_12 tutorial_adv tutorial/train 6705
+predict_and_compare tutorial_opt_12 thin_adv log 6705
+predict_and_compare tutorial_opt_12 tutorial_adv tutorial/train 6705
+
+predict_and_compare thin_opt_16 thin_adv log 6705
+predict_and_compare thin_opt_16 wide_adv log_wide 6705
+predict_and_compare wide_opt_16 wide_adv log_wide 6705
+predict_and_compare wide_opt_16 tutorial_adv tutorial/train 6705
+predict_and_compare tutorial_opt_16 thin_adv log 6705
+predict_and_compare tutorial_opt_16 tutorial_adv tutorial/train 6705
