@@ -68,8 +68,8 @@ def main(attack, target_model_name, source_model_names):
         logits = src_model(x)
         grad = gen_grad(x, logits, y)
 
-        ofile = open('output_data/'+basename(src_model_name)+'_to_'+basename(target_model_name)+'.txt', 'a')
-        ofile.write(args.attack+'\n')
+        ofile = open('output_data/blind_transfer/'+basename(src_model_name)+'_to_'+basename(target_model_name)+'.txt', 'a')
+        # ofile.write(args.attack+'\n')
         for eps in eps_list:
             # take the random step in the RAND+FGSM
             if attack == "rand_fgs":
@@ -101,7 +101,7 @@ def main(attack, target_model_name, source_model_names):
                     #err = tf_test_error_rate(src_model, x, X_adv, Y_test)
                     #print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
                     #ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
-                    err = tf_test_error_rate(target_model, x, X_adv, Y_test)
+                    _, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
                     print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
                     print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
                     ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
@@ -121,7 +121,7 @@ def main(attack, target_model_name, source_model_names):
                # err = tf_test_error_rate(src_model, x, X_adv, Y_test)
                # print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
                # ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
-                err = tf_test_error_rate(target_model, x, X_adv, Y_test)
+                _, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
                 print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
                 ofile.write('{} {:.2f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
 
@@ -139,7 +139,7 @@ def main(attack, target_model_name, source_model_names):
                             vmin=0, vmax=255, cmap='gray')
 
             # first run is white-box, then black-box attacks
-            err = tf_test_error_rate(target_model, x, X_adv, Y_test)
+            _, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
             print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
             ofile.write('{} {:.2f} \n'.format(eps, err))
     ofile.close()
