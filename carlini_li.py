@@ -11,12 +11,13 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.python.platform import flags
 import keras.backend as K
+from tqdm import tqdm
 
 MAX_ITERATIONS = 1000   # number of iterations to perform gradient descent
 ABORT_EARLY = True      # abort gradient descent upon first valid solution
 INITIAL_CONST = 1e-3    # the first value of c to start at
 LEARNING_RATE = 5e-3    # larger values converge faster to less accurate results
-LARGEST_CONST = 2e+1    # the largest value of c to go up to before giving up
+LARGEST_CONST = 2e+1   # the largest value of c to go up to before giving up
 TARGETED = True         # should we target one specific class? or just be wrong?
 CONST_FACTOR = 10.0     # f>1, rate at which we increase constant, smaller better
 CONFIDENCE = 0          # how strong the adversarial example should be
@@ -127,7 +128,7 @@ class CarliniLi:
             sess.run(init)
             while CONST < self.LARGEST_CONST:
                 # try solving for each value of the constant
-                #print('try const', CONST)
+                # print('try const', CONST)
                 for step in range(self.MAX_ITERATIONS):
                     feed_dict={timg: imgs,
                                tlab:labs,
@@ -135,12 +136,13 @@ class CarliniLi:
                                simg: starts,
                                const: CONST,
                                K.learning_phase(): 0}
-
-                    #if step % (self.MAX_ITERATIONS//10) == 0:
+                    #
+                    # if step % (self.MAX_ITERATIONS//10) == 0:
                     #    print(step, sess.run((loss,loss1,loss2),feed_dict=feed_dict))
 
                     # perform the update step
                     _, works, linf = sess.run([train, loss, loss2], feed_dict=feed_dict)
+                    # print(works, linf)
 
                     # it worked
                     if works < .0001*CONST and (self.ABORT_EARLY or step == CONST-1):
@@ -176,8 +178,8 @@ class CarliniLi:
         """
         r = []
         i = 0
-        for img,target in zip(imgs, targets):
-            print i
+        for img,target in tqdm(zip(imgs, targets)):
+            # print i
             r.extend(self.attack_single(img, target))
             i += 1
         return np.array(r)
