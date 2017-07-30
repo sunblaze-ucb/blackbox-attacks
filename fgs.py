@@ -1,6 +1,27 @@
 import keras.backend as K
-from attack_utils import gen_grad
+from attack_utils import gen_grad, gen_hessian
 import tensorflow as tf
+
+def symbolic_second_ord(x, grad, hessian, dim, eps=0.3, clipping=True):
+
+    hessian_inv = tf.matrix_inverse(hessian)
+
+    grad = tf.reshape(grad, [dim, 1])
+
+    perturb = 2 * tf.matmul(hessian_inv, grad)
+
+    perturb = tf.reshape(perturb, [dim])
+
+    normed_perturb = K.sign(perturb)
+
+    scaled_perturb = eps * normed_perturb
+
+    adv_x = K.stop_gradient(x + scaled_perturb)
+
+    if clipping:
+        adv_x = K.clip(adv_x, 0, 1)
+
+    return adv_x
 
 
 def symbolic_fgs(x, grad, eps=0.3, clipping=True):
