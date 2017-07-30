@@ -209,6 +209,7 @@ def tf_test_error_rate(model, x, X_test, y_test):
     return error_rate(predictions, y_test)
 
 
+
 def error_rate(predictions, labels):
     """
     Return the error rate in percent.
@@ -216,4 +217,10 @@ def error_rate(predictions, labels):
 
     assert len(predictions) == len(labels)
 
-    return 100.0 - (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
+    preds = np.argmax(predictions, 1)
+
+    orig = np.argmax(labels, 1)
+
+    error_rate = 100.0 - (100.0 * np.sum(preds == orig) / predictions.shape[0])
+
+    return preds, orig, error_rate

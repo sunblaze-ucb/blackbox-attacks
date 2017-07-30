@@ -1,5 +1,6 @@
 import numpy as np
 import keras.backend as K
+import tensorflow as tf
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
@@ -42,3 +43,10 @@ def gen_grad(x, logits, y, loss='logloss'):
     # Define gradient of loss wrt input
     grad = K.gradients(adv_loss, [x])[0]
     return grad
+
+def gen_hessian(x, logits, y, loss='logloss'):
+
+    adv_loss = gen_adv_loss(logits, y, loss)
+
+    hessian = tf.hessians(adv_loss, [x])[0]
+    return hessian

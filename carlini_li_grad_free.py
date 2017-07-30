@@ -11,8 +11,9 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.python.platform import flags
 import keras.backend as K
+import time
 
-MAX_ITERATIONS = 10   # number of iterations to perform gradient descent
+MAX_ITERATIONS = 50000   # number of iterations to perform gradient descent
 ABORT_EARLY = True      # abort gradient descent upon first valid solution
 INITIAL_CONST = 1e-3    # the first value of c to start at
 LEARNING_RATE = 5e-3    # larger values converge faster to less accurate results
@@ -21,9 +22,20 @@ TARGETED = True         # should we target one specific class? or just be wrong?
 CONST_FACTOR = 10.0     # f>1, rate at which we increase constant, smaller better
 CONFIDENCE = 0          # how strong the adversarial example should be
 EPS = 0.3
-MU = 0.1               # step size for directional derivative
+MU = 1e-5               # step size for directional derivative
 
 FLAGS = flags.FLAGS
+
+def show(img):
+    """
+    Show MNSIT digits in the console.
+    """
+    remap = "  .*#"+"#"*100
+    img = (img.flatten()+.5)*3
+    if len(img) != 784: return
+    print("START")
+    for i in range(28):
+        print("".join([remap[int(round(x))] for x in img[i*28:i*28+28]]))
 
 
 class CarliniLi_grad_free:
@@ -108,14 +120,11 @@ class CarliniLi_grad_free:
             loss1 = tf.maximum(0.0,real-other+self.CONFIDENCE)
 
         # sum up the losses
-        loss2 = tf.reduce_sum(tf.maximum(0.0, tf.abs(newimg-timg)-tau))
+        loss2 = tf.reduce_sum(tf.maximum(0.0, tf.abs(newimg-timg) - tau))
         loss = const*loss1+loss2
 
         # setup the adam optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
-    #     optimizer = tf.train.AdamOptimizer(self.LEARNING_RATE)
-	# #optimizer = tf.train.GradientDescentOptimizer(self.LEARNING_RATE)
-    #     train = optimizer.minimize(loss, var_list=[modifier])
 
         end_vars = tf.global_variables()
         new_vars = [x for x in end_vars if x.name not in start_vars]
@@ -128,30 +137,32 @@ class CarliniLi_grad_free:
             starts = np.array(starts)
             batch_size = imgs.shape[0]
 
-            cov = np.identity(self.dim)
+            cov = np.identity(self.dim)/self.dim
             mean = np.zeros(self.dim)
+            cov_inv = np.linalg.inv(cov)
 
             # initialize the variables
             sess.run(init)
             while CONST < self.LARGEST_CONST:
                 # try solving for each value of the constant
-                #print('try const', CONST)
+                print('try const', CONST)
                 mod_images = starts
+
                 for step in range(self.MAX_ITERATIONS):
-                    # print(step)
+                    time1 = time.time()
                     feed_dict_1={timg: imgs,
                                tlab:labs,
                                tau: tt,
                                simg: mod_images,
                                const: CONST,
                                K.learning_phase(): 0}
-                    loss_orig, linf = np.array(sess.run([loss, loss2], feed_dict=feed_dict_1))
+                    loss_orig, linf_1 = np.array(sess.run([loss, loss2], feed_dict=feed_dict_1))
 
                     random_direction = np.random.multivariate_normal(mean, cov, size=batch_size)
 
-                    random_direction = random_direction.reshape((batch_size, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+                    random_direction_rs = random_direction.reshape((batch_size, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
 
-                    dd_image = mod_images + self.MU * random_direction
+                    dd_image = mod_images + self.MU * random_direction_rs
 
                     feed_dict_2={timg: imgs,
                                tlab:labs,
@@ -160,26 +171,20 @@ class CarliniLi_grad_free:
                                const: CONST,
                                K.learning_phase(): 0}
 
-                    loss_dd = np.array(sess.run([loss], feed_dict=feed_dict_2))
-
-                    print(loss_orig, loss_dd)
+                    loss_dd, linf_2 = np.array(sess.run([loss, loss2], feed_dict=feed_dict_2))
 
                     loss_diff = (loss_dd - loss_orig)/self.MU
 
-                    print(loss_diff)
+                    modifier = self.LEARNING_RATE * np.dot(cov, loss_diff * np.dot(cov_inv, random_direction.T))
+                    modifier_rs = (modifier.T).reshape((batch_size, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
 
-                    modifier = self.LEARNING_RATE * loss_diff * random_direction
-
-                    print(modifier)
-
-                    mod_images = np.clip(mod_images - modifier, 0, 1)
+                    mod_images = np.clip(mod_images - modifier_rs, 0, 1)
 
 
-                    #if step % (self.MAX_ITERATIONS//10) == 0:
+                    if step % (self.MAX_ITERATIONS//10) == 0:
+                        print(step, (loss_orig, loss_dd, linf_1, linf_2))
+                        # show(mod_images)
                     #    print(step, sess.run((loss,loss1,loss2),feed_dict=feed_dict))
-
-                    # perform the update step
-                    # _, works, linf = sess.run([train, loss, loss2], feed_dict=feed_dict)
 
                     # it worked
                     if loss_orig < .0001*CONST and (self.ABORT_EARLY or step == CONST-1):
@@ -188,10 +193,11 @@ class CarliniLi_grad_free:
                         if works:
                             scores, origscores, nimg = sess.run((output,orig_output,newimg),feed_dict=feed_dict_1)
                             return scores, origscores, nimg, CONST
+                    time2 = time.time()
 
                 # we didn't succeed, increase constant and try again
 
-                if linf >= 0.1 * self.EPS:
+                if linf_1 >= 0.1 * self.EPS:
                     # perturbation is too large
                     if prev_scores is None:
                         return prev_scores
@@ -202,7 +208,7 @@ class CarliniLi_grad_free:
 
                 prev_scores, prev_origscores, prev_nimg = sess.run((output,orig_output,newimg),feed_dict=feed_dict_1)
 
-            scores, origscores, nimg = sess.run((output,orig_output,newimg),feed_dict=feed_dict)
+            scores, origscores, nimg = sess.run((output,orig_output,newimg),feed_dict=feed_dict_1)
             return scores, origscores, nimg, CONST
 
         return doit
