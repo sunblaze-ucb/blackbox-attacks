@@ -201,50 +201,108 @@ predict_and_compare() { # src dst ckpt_dir [offset]
 
 # blackbox transfer on naturally trained models
 
-predict_and_compare wide_fgsm_8 thin log
-predict_and_compare tutorial_fgsm_8 wide log_wide
-predict_and_compare thin_fgsm_8 tutorial tutorial/train
+# predict_and_compare wide_fgsm_8 thin log
+# predict_and_compare tutorial_fgsm_8 wide log_wide
+# predict_and_compare thin_fgsm_8 tutorial tutorial/train
 
-predict_and_compare wide_cwli_8 thin log 6705
-predict_and_compare tutorial_cwli_8 wide log_wide 6705
-predict_and_compare thin_cwli_8 tutorial tutorial/train 6705
+# predict_and_compare wide_cwli_8 thin log 6705
+# predict_and_compare tutorial_cwli_8 wide log_wide 6705
+# predict_and_compare thin_cwli_8 tutorial tutorial/train 6705
 
-predict_and_compare wide_fgsm_12 thin log
-predict_and_compare tutorial_fgsm_12 wide log_wide
-predict_and_compare thin_fgsm_12 tutorial tutorial/train
+# predict_and_compare wide_fgsm_12 thin log
+# predict_and_compare tutorial_fgsm_12 wide log_wide
+# predict_and_compare thin_fgsm_12 tutorial tutorial/train
 
-predict_and_compare wide_cwli_12 thin log 6705
-predict_and_compare tutorial_cwli_12 wide log_wide 6705
-predict_and_compare thin_cwli_12 tutorial tutorial/train 6705
+# predict_and_compare wide_cwli_12 thin log 6705
+# predict_and_compare tutorial_cwli_12 wide log_wide 6705
+# predict_and_compare thin_cwli_12 tutorial tutorial/train 6705
 
-predict_and_compare wide_fgsm_16 thin log
-predict_and_compare tutorial_fgsm_16 wide log_wide
-predict_and_compare thin_fgsm_16 tutorial tutorial/train
+# predict_and_compare wide_fgsm_16 thin log
+# predict_and_compare tutorial_fgsm_16 wide log_wide
+# predict_and_compare thin_fgsm_16 tutorial tutorial/train
 
-predict_and_compare wide_cwli_16 thin log 6705
-predict_and_compare tutorial_cwli_16 wide log_wide 6705
-predict_and_compare thin_cwli_16 tutorial tutorial/train 6705
+# predict_and_compare wide_cwli_16 thin log 6705
+# predict_and_compare tutorial_cwli_16 wide log_wide 6705
+# predict_and_compare thin_cwli_16 tutorial tutorial/train 6705
 
-predict_and_compare thin_opt_8 tutorial tutorial/train 6705
-predict_and_compare thin_opt_12 tutorial tutorial/train 6705
-predict_and_compare thin_opt_16 tutorial tutorial/train 6705
+# predict_and_compare thin_opt_8 tutorial tutorial/train 6705
+# predict_and_compare thin_opt_12 tutorial tutorial/train 6705
+# predict_and_compare thin_opt_16 tutorial tutorial/train 6705
 
-predict_and_compare wide_opt_8 thin log 6705
-predict_and_compare wide_opt_12 thin log 6705
-predict_and_compare wide_opt_16 thin log 6705
+# predict_and_compare wide_opt_8 thin log 6705
+# predict_and_compare wide_opt_12 thin log 6705
+# predict_and_compare wide_opt_16 thin log 6705
 
-predict_and_compare tutorial_opt_8 wide log_wide 6705
-predict_and_compare tutorial_opt_12 wide log_wide 6705
-predict_and_compare tutorial_opt_16 wide log_wide 6705
+# predict_and_compare tutorial_opt_8 wide log_wide 6705
+# predict_and_compare tutorial_opt_12 wide log_wide 6705
+# predict_and_compare tutorial_opt_16 wide log_wide 6705
 
-predict_and_compare wide_fgsm_4 thin log
-predict_and_compare tutorial_fgsm_4 wide log_wide
-predict_and_compare thin_fgsm_4 tutorial tutorial/train
+# predict_and_compare wide_fgsm_4 thin log
+# predict_and_compare tutorial_fgsm_4 wide log_wide
+# predict_and_compare thin_fgsm_4 tutorial tutorial/train
 
-predict_and_compare wide_fgsm_20 thin log
-predict_and_compare tutorial_fgsm_20 wide log_wide
-predict_and_compare thin_fgsm_20 tutorial tutorial/train
+# predict_and_compare wide_fgsm_20 thin log
+# predict_and_compare tutorial_fgsm_20 wide log_wide
+# predict_and_compare thin_fgsm_20 tutorial tutorial/train
 
-predict_and_compare wide_fgsm_24 thin log
-predict_and_compare tutorial_fgsm_24 wide log_wide
-predict_and_compare thin_fgsm_24 tutorial tutorial/train
+# predict_and_compare wide_fgsm_24 thin log
+# predict_and_compare tutorial_fgsm_24 wide log_wide
+# predict_and_compare thin_fgsm_24 tutorial tutorial/train
+
+# higher perturbation, 20-24-28
+
+# predict_and_compare wide_fgsm_28 thin log
+# predict_and_compare wide_fgsm_28 thin_adv log_adv
+# predict_and_compare wide_fgsm_28 thin_ensadv log_ensadv
+# predict_and_compare tutorial_fgsm_28 wide log_wide
+# predict_and_compare tutorial_fgsm_28 wide_adv log_adv_wide
+# predict_and_compare tutorial_fgsm_28 wide_ensadv log_ensadv_wide
+# predict_and_compare thin_fgsm_28 tutorial tutorial/train
+# predict_and_compare thin_fgsm_28 tutorial_adv tutorial/train_adv
+# predict_and_compare thin_fgsm_28 tutorial_ensadv tutorial/train_ensadv
+
+# predict_and_compare thin_fgsm_28 thin log
+# predict_and_compare wide_fgsm_28 wide log_wide
+# predict_and_compare tutorial_fgsm_28 tutorial tutorial/train
+
+# predict_and_compare wide_opt_20 thin log 6705
+# predict_and_compare wide_opt_20 thin_adv log_adv 6705
+# predict_and_compare wide_opt_20 thin_ensadv log_ensadv 6705
+# predict_and_compare tutorial_opt_20 wide log_wide 6705
+# predict_and_compare tutorial_opt_20 wide_adv log_adv_wide 6705
+# predict_and_compare tutorial_opt_20 wide_ensadv log_ensadv_wide 6705
+# predict_and_compare thin_opt_20 tutorial tutorial/train 6705
+# predict_and_compare thin_opt_20 tutorial_adv tutorial/train_adv 6705
+# predict_and_compare thin_opt_20 tutorial_ensadv tutorial/train_ensadv 6705
+
+# predict_and_compare thin_opt_20 thin log 6705
+# predict_and_compare wide_opt_20 wide log_wide 6705
+# predict_and_compare tutorial_opt_20 tutorial tutorial/train 6705
+
+# predict_and_compare wide_opt_24 thin log 6705
+# predict_and_compare wide_opt_24 thin_adv log_adv 6705
+# predict_and_compare wide_opt_24 thin_ensadv log_ensadv 6705
+# predict_and_compare tutorial_opt_24 wide log_wide 6705
+# predict_and_compare tutorial_opt_24 wide_adv log_adv_wide 6705
+# predict_and_compare tutorial_opt_24 wide_ensadv log_ensadv_wide 6705
+# predict_and_compare thin_opt_24 tutorial tutorial/train 6705
+# predict_and_compare thin_opt_24 tutorial_adv tutorial/train_adv 6705
+# predict_and_compare thin_opt_24 tutorial_ensadv tutorial/train_ensadv 6705
+
+# predict_and_compare thin_opt_24 thin log 6705
+# predict_and_compare wide_opt_24 wide log_wide 6705
+# predict_and_compare tutorial_opt_24 tutorial tutorial/train 6705
+
+# predict_and_compare wide_opt_28 thin log 6705
+# predict_and_compare wide_opt_28 thin_adv log_adv 6705
+# predict_and_compare wide_opt_28 thin_ensadv log_ensadv 6705
+# predict_and_compare tutorial_opt_28 wide log_wide 6705
+# predict_and_compare tutorial_opt_28 wide_adv log_adv_wide 6705
+# predict_and_compare tutorial_opt_28 wide_ensadv log_ensadv_wide 6705
+# predict_and_compare thin_opt_28 tutorial tutorial/train 6705
+# predict_and_compare thin_opt_28 tutorial_adv tutorial/train_adv 6705
+# predict_and_compare thin_opt_28 tutorial_ensadv tutorial/train_ensadv 6705
+
+# predict_and_compare thin_opt_28 thin log 6705
+# predict_and_compare wide_opt_28 wide log_wide 6705
+# predict_and_compare tutorial_opt_28 tutorial tutorial/train 6705

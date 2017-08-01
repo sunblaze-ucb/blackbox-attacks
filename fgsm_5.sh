@@ -1,6 +1,6 @@
 #!/bin/sh -ex
 
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=6
 # python generate_test_fgsm.py test_thin_fgsm_12.npy log 12
 # python generate_test_fgsm.py test_wide_fgsm_12.npy log_wide 12
 # python generate_test_fgsm.py test_tutorial_fgsm_12.npy tutorial/train 12
@@ -20,3 +20,7 @@ export CUDA_VISIBLE_DEVICES=3
 # python generate_test_fgsm.py test_thin_fgsm_24.npy log 24
 # python generate_test_fgsm.py test_wide_fgsm_24.npy log_wide 24
 # python generate_test_fgsm.py test_tutorial_fgsm_24.npy tutorial/train 24
+
+# python generate_test_fgsm.py test_thin_fgsm_28.npy log 28
+# python generate_test_fgsm.py test_wide_fgsm_28.npy log_wide 28
+# python generate_test_fgsm.py test_tutorial_fgsm_28.npy tutorial/train 28
