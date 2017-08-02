@@ -17,6 +17,7 @@ LARGEST_CONST = 2e+1    # the largest value of c to go up to before giving up
 TARGETED = True         # should we target one specific class? or just be wrong?
 CONST_FACTOR = 10.0     # f>1, rate at which we increase constant, smaller better
 EPS = 8.
+RANDOM_INIT = False
 
 IMAGE_ROWS = 32
 IMAGE_COLS = 32
@@ -29,7 +30,7 @@ class CarliniLi:
                  targeted = TARGETED, learning_rate = LEARNING_RATE,
                  max_iterations = MAX_ITERATIONS,
                  initial_const = INITIAL_CONST, largest_const = LARGEST_CONST,
-                 const_factor = CONST_FACTOR, eps=EPS):
+                 const_factor = CONST_FACTOR, eps=EPS, random_init=RANDOM_INIT):
         """
         The L_infinity optimized attack.
         Returns adversarial examples for the supplied model.
@@ -60,6 +61,7 @@ class CarliniLi:
         self.LARGEST_CONST = largest_const
         self.const_factor = const_factor
         self.EPS = eps
+        self.RANDOM_INIT = random_init
 
         self.grad = self.gradient_descent(sess, model)
 
@@ -166,16 +168,18 @@ class CarliniLi:
         Run the attack on a single image and label
         """
 
-        # the previous image
+        # the initial image
         prev = np.copy(img).reshape((1, IMAGE_ROWS, IMAGE_COLS, NUM_CHANNELS))
+        if self.RANDOM_INIT:
+            prev = prev + np.random.uniform(-self.EPS, self.EPS, prev.shape)
         tau = self.EPS
         const = self.INITIAL_CONST
 
         res = self.grad([np.copy(img)], [target], np.copy(prev), tau, const)
 
         if res is None:
-            # the attack failed, we return this as our final answer
-            return prev
+            # the attack failed, we return the original as our final answer
+            return np.copy(img)
 
         scores, origscores, nimg, const = res
         prev = nimg
