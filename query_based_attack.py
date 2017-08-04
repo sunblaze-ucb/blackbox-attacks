@@ -11,6 +11,9 @@ from matplotlib import image as img
 import time
 from os.path import basename
 
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import normalize
+
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
@@ -20,7 +23,9 @@ BATCH_SIZE = 100
 BATCH_EVAL_NUM = 1
 CLIP_MIN = 0
 CLIP_MAX = 1
-FEATURE_GROUP_SIZE = 7
+# FEATURE_GROUP_SIZE = 7
+NUM_COMPONENTS = 10
+PCA_FLAG = True
 
 def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
     img_count = 0
@@ -44,7 +49,7 @@ def est_img_save(i, adv_prediction, curr_target, eps, x_adv):
                 img.imsave( 'images/'+args.method+'/'+args.norm+'/'+args.loss_type+
                                 '_{}_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
                                 adv_label, curr_target[k], eps, args.delta, args.alpha,
-                                FEATURE_GROUP_SIZE),
+                                args.group_size),
                     x_adv[k].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS)*255, cmap='gray')
                 img_count += 1
             if img_count >= 10:
@@ -78,12 +83,27 @@ def est_write_out(eps, success, avg_l2_perturb):
         filename = 'output_data/'+args.method+'_'+args.loss_type+'_'+args.norm+'_'+target_model_name
         if args.alpha != 0.0:
             filename += '{:.2f}_rand'.format(args.alpha)
+        if args.group_size != 1:
+            filename += '{}_group'.format(args.group_size)
+        if PCA_FLAG == True:
+            filename += 'pca_{}'.format(NUM_COMPONENTS)
         filename += '.txt'
         ofile = open(filename, 'a')
-        # ofile.write('{} {} {} {}\n'.format(args.delta, eps, success, avg_l2_perturb))
+        ofile.write('{} {} {} {}\n'.format(args.delta, eps, success, avg_l2_perturb))
         print('Fraction of targets achieved (query-based): {}'.format(success))
     ofile.close()
     return
+
+def pca_components(X, dim):
+    X = X.reshape((len(X), dim))
+    pca = PCA(n_components=dim)
+    pca.fit(X)
+
+    U = (pca.components_).T
+    U_norm = normalize(U, axis=0)
+
+    return U_norm[:,:NUM_COMPONENTS]
+
 
 def xent_est(prediction, x, x_plus_i, x_minus_i, curr_target):
     pred_plus = K.get_session().run([prediction], feed_dict={x: x_plus_i,
@@ -94,7 +114,7 @@ def xent_est(prediction, x, x_plus_i, x_minus_i, curr_target):
     pred_minus_t = pred_minus[np.arange(BATCH_SIZE), list(curr_target)]
     single_grad_est = (pred_plus_t - pred_minus_t)/args.delta
 
-    return single_grad_est
+    return single_grad_est/2.0
 
 def CW_est(logits, x, x_plus_i, x_minus_i, curr_sample, curr_target):
     curr_logits = K.get_session().run([logits], feed_dict={x: curr_sample,
@@ -116,28 +136,38 @@ def CW_est(logits, x, x_plus_i, x_minus_i, curr_sample, curr_target):
     logit_t_grad_est = (logit_plus_t - logit_minus_t)/args.delta
     logit_max_grad_est = (logit_plus_max - logit_minus_max)/args.delta
 
-    return logit_t_grad_est, logit_max_grad_est
+    return logit_t_grad_est/2.0, logit_max_grad_est/2.0
 
 
-def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim):
+def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim, U=None):
     grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
     logits_np = K.get_session().run([logits], feed_dict={x: curr_sample,
                                                     K.learning_phase(): 0})[0]
-    random_indices = np.random.permutation(dim)
-    num_groups = dim / FEATURE_GROUP_SIZE
-    print(num_groups)
+    if PCA_FLAG == False:
+        random_indices = np.random.permutation(dim)
+        num_groups = dim / args.group_size
+    elif PCA_FLAG == True:
+        num_groups = NUM_COMPONENTS
     for j in range(num_groups):
         basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
-        if j != num_groups-1:
-            curr_indices = random_indices[j*FEATURE_GROUP_SIZE:(j+1)*FEATURE_GROUP_SIZE]
-        elif j == num_groups-1:
-            curr_indices = random_indices[j*FEATURE_GROUP_SIZE:]
-        row = curr_indices/FLAGS.IMAGE_COLS
-        col = curr_indices % FLAGS.IMAGE_COLS
-        for i in range(len(curr_indices)):
-            basis_vec[:, row[i], col[i]] = 1.
+
+        if PCA_FLAG == False:
+            if j != num_groups-1:
+                curr_indices = random_indices[j*args.group_size:(j+1)*args.group_size]
+            elif j == num_groups-1:
+                curr_indices = random_indices[j*args.group_size:]
+            row = curr_indices/FLAGS.IMAGE_COLS
+            col = curr_indices % FLAGS.IMAGE_COLS
+            for i in range(len(curr_indices)):
+                basis_vec[:, row[i], col[i]] = 1.
+
+        elif PCA_FLAG == True:
+            basis_vec[:] = U[:,j].reshape((1, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+            # basis_vec = np.sign(basis_vec)
+
         x_plus_i = np.clip(curr_sample + args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
         x_minus_i = np.clip(curr_sample - args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
+
         if args.loss_type == 'cw':
             logit_t_grad_est, logit_max_grad_est = CW_est(logits, x, x_plus_i,
                                             x_minus_i, curr_sample, curr_target)
@@ -147,8 +177,14 @@ def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim
                 single_grad_est = logit_max_grad_est - logit_t_grad_est
         elif args.loss_type == 'xent':
             single_grad_est = xent_est(prediction, x, x_plus_i, x_minus_i, curr_target)
-        for i in range(len(curr_indices)):
-            grad_est[:, row[i], col[i]] = single_grad_est.reshape((BATCH_SIZE,1))
+        if PCA_FLAG == False:
+            for i in range(len(curr_indices)):
+                grad_est[:, row[i], col[i]] = single_grad_est.reshape((BATCH_SIZE,1))
+        elif PCA_FLAG == True:
+            grad_est += basis_vec*single_grad_est[:,None,None,None]
+
+    # if PCA_FLAG == True:
+    #     grad_est /= num_groups
     # Getting gradient of the loss
     if args.loss_type == 'xent':
         loss_grad = -1.0 * grad_est/p_t[:, None, None, None]
@@ -196,6 +232,9 @@ def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, ep
     success = 0
     avg_l2_perturb = 0
     time1 = time.time()
+    U = None
+    if PCA_FLAG == True:
+        U = pca_components(X_test, dim)
     for i in range(BATCH_EVAL_NUM):
         if i % 10 ==0:
             print('{}, {}'.format(i, eps))
@@ -209,7 +248,8 @@ def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, ep
         p_t = curr_prediction[np.arange(BATCH_SIZE), list(curr_target)]
 
         if 'query_based' in args.method:
-            loss_grad = finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim)
+            loss_grad = finite_diff_method(prediction, logits, x, curr_sample,
+                                            curr_target, p_t, dim, U)
         elif 'one_shot' in args.method:
             loss_grad = one_shot_method(prediction, x, curr_sample, curr_target, p_t)
 
@@ -302,7 +342,7 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
 
     wb_img_save(adv_pred_np, targets, eps, X_adv_t)
 
-    white_box_error = tf_test_error_rate(target_model, x, X_adv_t, targets_cat)
+    _, _, white_box_error = tf_test_error_rate(target_model, x, X_adv_t, targets_cat)
     if '_un' not in args.method:
         white_box_error = 100.0 - white_box_error
 
@@ -376,7 +416,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("target_model", help="target model for attack")
     parser.add_argument("--method", choices=['query_based', 'one_shot',
-                        'query_based_un', 'one_shot_un'], default='query_based')
+                        'query_based_un', 'one_shot_un'], default='query_based_un')
     parser.add_argument("--delta", type=float, default=0.01,
                         help="local perturbation")
     parser.add_argument("--norm", type=str, default='linf',
@@ -387,6 +427,8 @@ if __name__ == "__main__":
                                 help="Strength of CW sample")
     parser.add_argument("--alpha", type=float, default=0.0,
                             help="Strength of random perturbation")
+    parser.add_argument("--group_size", type=int, default=1,
+                            help="Number of features to group together")
 
     args = parser.parse_args()
 
