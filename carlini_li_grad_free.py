@@ -13,11 +13,11 @@ from tensorflow.python.platform import flags
 import keras.backend as K
 import time
 
-MAX_ITERATIONS = 50000   # number of iterations to perform gradient descent
+MAX_ITERATIONS = 100000   # number of iterations to perform gradient descent
 ABORT_EARLY = True      # abort gradient descent upon first valid solution
-INITIAL_CONST = 1e-3    # the first value of c to start at
+INITIAL_CONST = 1e-2    # the first value of c to start at
 LEARNING_RATE = 5e-3    # larger values converge faster to less accurate results
-LARGEST_CONST = 2e+1    # the largest value of c to go up to before giving up
+LARGEST_CONST = 2e+2    # the largest value of c to go up to before giving up
 TARGETED = True         # should we target one specific class? or just be wrong?
 CONST_FACTOR = 10.0     # f>1, rate at which we increase constant, smaller better
 CONFIDENCE = 0          # how strong the adversarial example should be
@@ -181,13 +181,13 @@ class CarliniLi_grad_free:
                     mod_images = np.clip(mod_images - modifier_rs, 0, 1)
 
 
-                    if step % (self.MAX_ITERATIONS//10) == 0:
+                    if step % (self.MAX_ITERATIONS//100) == 0:
                         print(step, (loss_orig, loss_dd, linf_1, linf_2))
                         # show(mod_images)
                     #    print(step, sess.run((loss,loss1,loss2),feed_dict=feed_dict))
 
                     # it worked
-                    if loss_orig < .0001*CONST and (self.ABORT_EARLY or step == CONST-1):
+                    if loss_orig < .0001*CONST and (self.ABORT_EARLY or step == MAX_ITERATIONS-1):
                         get = sess.run(K.softmax(output), feed_dict=feed_dict_1)
                         works = compare(get, labs)
                         if works:

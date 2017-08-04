@@ -45,7 +45,7 @@ def main(attack, src_model_name, target_model_names):
 
     # simply compute test error
     if attack == "test":
-        err = tf_test_error_rate(src_model, x, X_test, Y_test)
+        _,_, err = tf_test_error_rate(src_model, x, X_test, Y_test)
         print '{}: {:.1f}'.format(basename(src_model_name), err)
 
         for (name, target_model) in zip(target_model_names, target_models):
@@ -100,20 +100,20 @@ def main(attack, src_model_name, target_model_names):
         pickle_name = attack + '_adv_samples/' + basename(src_model_name)+'_adv_'+str(args.eps)+'.p'
         print(pickle_name)
         Y_test = Y_test[0:l]
-        if os.path.exists(pickle_name):
+        if os.path.exists(pickle_name) and attack == "CW":
             print 'Loading adversarial samples'
             X_adv = pickle.load(open(pickle_name,'rb'))
             ofile = open('output_data/'+attack+'_attack_success.txt','a')
 
             preds_adv, _, err = tf_test_error_rate(src_model, x, X_adv, Y_test)
-            
+
             pickle_name = attack + '_adv_samples/' + basename(src_model_name)+'_labels_'+str(args.eps)+'.p'
             pickle.dump(preds_adv, open(pickle_name, 'wb'))
-            
+
             print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(src_model_name), err)
             ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(src_model_name), err))
             for (name, target_model) in zip(target_model_names, target_models):
-                    err = tf_test_error_rate(target_model, x, X_adv, Y_test)
+                    preds_adv,_,err = tf_test_error_rate(target_model, x, X_adv, Y_test)
                     print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(name), err)
                     ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(name), err))
 
@@ -167,7 +167,7 @@ def main(attack, src_model_name, target_model_names):
     pickle.dump(orig, open(pickle_name, 'wb'))
     pickle_name = attack + '_adv_samples/' + basename(src_model_name)+'_labels_'+str(args.eps)+'.p'
     pickle.dump(preds_adv, open(pickle_name, 'wb'))
-    
+
     preds_orig, _, _ = tf_test_error_rate(src_model,x, X_test, Y_test[0:l])
     pickle_name = basename(src_model_name)+'_labels.p'
     pickle.dump(preds_orig, open(pickle_name, 'wb'))
