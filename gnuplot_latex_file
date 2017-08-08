@@ -78,15 +78,238 @@ set xrange [0:0.5]
 set yrange [0:100]
 # set margins 3, 1, 2, 2
 set key top left
-set key box width -4
-set title "\small{Black-box adversarial success using FGS samples from Model B \n on models trained with $\ell_{\infty}$ = 0.3 samples}"
+set key box width -5
+set title '\shortstack{\small{FGS samples from Model B on Model A variants} \\ \small{trained with $\ell_{\infty}$ = 0.3 samples}}'
 
-plot 'output_data/blind_transfer/modelB_to_modelA_adv_0.3_linf_iter.txt' u 1:2 with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
-'output_data/blind_transfer/modelB_to_modelA_adv_0.3_linf_iter.txt' u 1:2 with lp ls 1 title '\footnotesize{iterative}', \
-'output_data/blind_transfer/modelB_to_modelA_adv.txt' u 1:2 with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+plot 'output_data/blind_transfer/modelB_to_modelA_adv_0.3_linf_iter.txt' u 1:2 with lp ls 1 title '\footnotesize{iterative}',\
 'output_data/blind_transfer/modelB_to_modelA_adv.txt' u 1:2 with lp ls 2 title '\footnotesize{standard}', \
-'output_data/blind_transfer/modelB_to_modelA_ens_0.3_linf_ACD.txt' u 1:2 with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
 'output_data/blind_transfer/modelB_to_modelA_ens_0.3_linf_ACD.txt' u 1:2 with lp ls 3 title '\footnotesize{ensemble}', \
-'output_data/blind_transfer/modelB_to_modelA.txt' u 1:2 with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
 'output_data/blind_transfer/modelB_to_modelA.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/modelC_to_modelB0_3_all.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key box width -5
+set title '\shortstack{\small{FGS samples from Model C on Model B variants} \\ \small{trained with $\ell_{\infty}$ = 0.3 samples}}'
+
+plot 'output_data/blind_transfer/modelC_to_modelB_adv_0.3_linf_iter.txt' u 1:2 with lp ls 1 title '\footnotesize{iterative}',\
+'output_data/blind_transfer/modelC_to_modelB_adv.txt' u 1:2 with lp ls 2 title '\footnotesize{standard}', \
+'output_data/blind_transfer/modelC_to_modelB_ens_0.3_linf_ABD.txt' u 1:2 with lp ls 3 title '\footnotesize{ensemble}', \
+'output_data/blind_transfer/modelC_to_modelB.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/modelD_to_modelC0_3_all.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key box width -5
+set title '\shortstack{\small{FGS samples from Model D on Model C variants} \\ \small{trained with $\ell_{\infty}$ = 0.3 samples}}'
+
+plot 'output_data/blind_transfer/modelD_to_modelC_adv_0.3_linf_iter.txt' u 1:2 with lp ls 1 title '\footnotesize{iterative}',\
+'output_data/blind_transfer/modelD_to_modelC_adv.txt' u 1:2 with lp ls 2 title '\footnotesize{standard}', \
+'output_data/blind_transfer/modelD_to_modelC_ens_0.3_linf_ABC.txt' u 1:2 with lp ls 3 title '\footnotesize{ensemble}', \
+'output_data/blind_transfer/modelD_to_modelC.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/modelA_to_modelD0_3_all.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key box width -5
+set title '\shortstack{\small{FGS samples from Model A on Model D variants} \\ \small{trained with $\ell_{\infty}$ = 0.3 samples}}'
+
+plot 'output_data/blind_transfer/modelA_to_modelD_adv_0.3_linf_iter.txt' u 1:2 with lp ls 1 title '\footnotesize{iterative}',\
+'output_data/blind_transfer/modelA_to_modelD_adv.txt' u 1:2 with lp ls 2 title '\footnotesize{standard}', \
+'output_data/blind_transfer/modelA_to_modelD_ens_0.3_linf_BCD.txt' u 1:2 with lp ls 3 title '\footnotesize{ensemble}', \
+'output_data/blind_transfer/modelA_to_modelD.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/modelB_to_modelA0_2_all.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key box width -5
+set title '\shortstack{\small{FGS samples from Model B on Model A variants} \\ \small{trained with $\ell_{\infty}$ = 0.2 samples}}'
+
+plot 'output_data/blind_transfer/modelB_to_modelA_adv_0.2_linf_iter.txt' u 1:2 with lp ls 1 title '\footnotesize{iterative}',\
+'output_data/blind_transfer/modelB_to_modelA_adv_0.2_linf_.txt' u 1:2 with lp ls 2 title '\footnotesize{standard}', \
+'output_data/blind_transfer/modelB_to_modelA_ens_0.2_linf_ACD.txt' u 1:2 with lp ls 3 title '\footnotesize{ensemble}'
+#'output_data/blind_transfer/modelB_to_modelA.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/modelC_to_modelB0_2_all.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key box width -5
+set title '\shortstack{\small{FGS samples from Model C on Model B variants} \\ \small{trained with $\ell_{\infty}$ = 0.2 samples}}'
+
+plot 'output_data/blind_transfer/modelC_to_modelB_adv_0.2_linf_iter.txt' u 1:2 with lp ls 1 title '\footnotesize{iterative}',\
+'output_data/blind_transfer/modelC_to_modelB_adv_0.2_linf_.txt' u 1:2 with lp ls 2 title '\footnotesize{standard}', \
+'output_data/blind_transfer/modelC_to_modelB_ens_0.2_linf_ABD.txt' u 1:2 with lp ls 3 title '\footnotesize{ensemble}', \
+# 'output_data/blind_transfer/modelC_to_modelB.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/modelD_to_modelC0_2_all.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key box width -5
+set title '\shortstack{\small{FGS samples from Model D on Model C variants} \\ \small{trained with $\ell_{\infty}$ = 0.2 samples}}'
+
+plot 'output_data/blind_transfer/modelD_to_modelC_adv_0.2_linf_iter.txt' u 1:2 with lp ls 1 title '\footnotesize{iterative}',\
+'output_data/blind_transfer/modelD_to_modelC_adv_0.2_linf_.txt' u 1:2 with lp ls 2 title '\footnotesize{standard}', \
+'output_data/blind_transfer/modelD_to_modelC_ens_0.2_linf_ABC.txt' u 1:2 with lp ls 3 title '\footnotesize{ensemble}', \
+# 'output_data/blind_transfer/modelD_to_modelC.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/modelA_to_modelD0_2_all.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key box width -5
+set title '\shortstack{\small{FGS samples from Model A on Model D variants} \\ \small{trained with $\ell_{\infty}$ = 0.2 samples}}'
+
+plot 'output_data/blind_transfer/modelA_to_modelD_adv_0.2_linf_iter.txt' u 1:2 with lp ls 1 title '\footnotesize{iterative}',\
+'output_data/blind_transfer/modelA_to_modelD_adv_0.2_linf_.txt' u 1:2 with lp ls 2 title '\footnotesize{standard}', \
+'output_data/blind_transfer/modelA_to_modelD_ens_0.2_linf_BCD.txt' u 1:2 with lp ls 3 title '\footnotesize{ensemble}', \
+# 'output_data/blind_transfer/modelD_to_modelC.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/tutorial_to_wide_fgsm.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:28]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key samplen 2 spacing 0.75
+set key box width -5
+set title '\small{FGS samples from Model G on Model F variants ($\ell_{\infty}$ = 8)}'
+
+plot 'plots-points/tutorial-fgsm-to-wide.txt' u 1:($2*100) with lp ls 1 title '\footnotesize{no adv.}',\
+'plots-points/tutorial-fgsm-to-wide_adv.txt' u 1:($2*100) with lp ls 2 title '\footnotesize{adv.}', \
+'plots-points/tutorial-fgsm-to-wide_ensadv.txt' u 1:($2*100) with lp ls 3 title '\footnotesize{ens-adv.}'
+# 'output_data/blind_transfer/modelD_to_modelC.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/tutorial_to_wide_opt.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:28]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key samplen 2 spacing 0.75
+set key box width -5
+set title '\small{Opt. samples from Model G on Model F variants ($\ell_{\infty}$ = 8)}'
+
+plot 'plots-points/tutorial-opt-to-wide.txt' u 1:($2*100) with lp ls 1 title '\footnotesize{no adv.}',\
+'plots-points/tutorial-opt-to-wide_adv.txt' u 1:($2*100) with lp ls 2 title '\footnotesize{adv.}', \
+'plots-points/tutorial-opt-to-wide_ensadv.txt' u 1:($2*100) with lp ls 3 title '\footnotesize{ens-adv.}'
+# 'output_data/blind_transfer/modelD_to_modelC.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/thin_to_tutorial_fgsm.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:28]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key samplen 2 spacing 0.75
+set key box width -5
+set title '\small{FGS samples from Model E on Model G variants ($\ell_{\infty}$ = 8)}'
+
+plot 'plots-points/thin-fgsm-to-tutorial.txt' u 1:($2*100) with lp ls 1 title '\footnotesize{no adv.}',\
+'plots-points/thin-fgsm-to-tutorial_adv.txt' u 1:($2*100) with lp ls 2 title '\footnotesize{adv.}', \
+'plots-points/thin-fgsm-to-tutorial_ensadv.txt' u 1:($2*100) with lp ls 3 title '\footnotesize{ens-adv.}'
+# 'output_data/blind_transfer/modelD_to_modelC.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/thin_to_tutorial_opt.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:28]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key samplen 2 spacing 0.75
+set key box width -5
+set title '\small{Opt. samples from Model E on Model G variants ($\ell_{\infty}$ = 8)}'
+
+plot 'plots-points/thin-opt-to-tutorial.txt' u 1:($2*100) with lp ls 1 title '\footnotesize{no adv.}',\
+'plots-points/thin-opt-to-tutorial_adv.txt' u 1:($2*100) with lp ls 2 title '\footnotesize{adv.}', \
+'plots-points/thin-opt-to-tutorial_ensadv.txt' u 1:($2*100) with lp ls 3 title '\footnotesize{ens-adv.}'
+# 'output_data/blind_transfer/modelD_to_modelC.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/wide_to_thin_fgsm.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:28]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key top left
+set key samplen 2 spacing 0.75
+set key box width -5
+set title '\small{FGS samples from Model F on Model E variants ($\ell_{\infty}$ = 8)}'
+
+plot 'plots-points/wide-fgsm-to-thin.txt' u 1:($2*100) with lp ls 1 title '\footnotesize{no adv.}',\
+'plots-points/wide-fgsm-to-thin_adv.txt' u 1:($2*100) with lp ls 2 title '\footnotesize{adv.}', \
+'plots-points/wide-fgsm-to-thin_ensadv.txt' u 1:($2*100) with lp ls 3 title '\footnotesize{ens-adv.}'
+# 'output_data/blind_transfer/modelD_to_modelC.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
+unset output
+
+set output "latex_plots/wide_to_thin_opt.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:28]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key center left
+set key samplen 2 spacing 0.75
+set key box width -5
+set title '\small{Opt. samples from Model F on Model E variants ($\ell_{\infty}$ = 8)}'
+
+plot 'plots-points/wide-opt-to-thin.txt' u 1:($2*100) with lp ls 1 title '\footnotesize{no adv.}',\
+'plots-points/wide-opt-to-thin_adv.txt' u 1:($2*100) with lp ls 2 title '\footnotesize{adv.}', \
+'plots-points/wide-opt-to-thin_ensadv.txt' u 1:($2*100) with lp ls 3 title '\footnotesize{ens-adv.}'
+# 'output_data/blind_transfer/modelD_to_modelC.txt' u 1:2 with lp ls 4 title '\footnotesize{no adv.}'
 unset output

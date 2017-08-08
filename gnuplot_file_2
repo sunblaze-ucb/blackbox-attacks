@@ -192,8 +192,8 @@ set yrange [0:100]
 set key right bottom
 set title 'Black-box adversarial success on Model A adv iter(0.2) using FGS samples from Model B'
 
-plot 'output_data/modelB_to_modelA_adv_0.2_linf_iter.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
-'output_data/modelB_to_modelA_adv_0.2_linf_iter.txt' u 1:2 with lines ls 2 title columnheader(1)
+plot 'output_data/blind_transfer/modelB_to_modelA_adv_0.2_linf_iter.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/blind_transfer/modelB_to_modelA_adv_0.2_linf_iter.txt' u 1:2 with lines ls 2 title columnheader(1)
 unset output
 
 set output "plots/grad_est_attacks_cw_0.01_loss_linf_modelA_0.2_adv.png"
@@ -290,4 +290,48 @@ plot 'output_data/untargeted/query_based_un_cw_1.0_linf_modelA_adv_0.2_linf_iter
 'output_data/untargeted/query_based_un_cw_1.0_linf_modelA_adv_0.2_linf_iter.txt' u 2:3 with lines ls 1 title 'finite diff', \
 'output_data/untargeted/wb_un_cw_linf_modelA_adv_0.2_linf_iter.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
 'output_data/untargeted/wb_un_cw_linf_modelA_adv_0.2_linf_iter.txt' u 1:2 with lines ls 2 title 'wb FGSM'
+unset output
+
+set output "plots/random_group_linf_Model_A.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key left top
+set title 'Comparing adversarial success using various random feature groupings for Model A'
+
+plot 'output_data/untargeted/query_based_un_cw_linf_modelA7_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/untargeted/query_based_un_cw_linf_modelA7_group.txt' u 2:3 with lines ls 1 title 'RG 7', \
+'output_data/untargeted/query_based_un_cw_linf_modelA35_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/untargeted/query_based_un_cw_linf_modelA35_group.txt' u 2:3 with lines ls 2 title 'RG 35', \
+'output_data/untargeted/query_based_un_cw_linf_modelA70_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
+'output_data/untargeted/query_based_un_cw_linf_modelA70_group.txt' u 2:3 with lines ls 3 title 'RG 70', \
+'output_data/untargeted/query_based_un_cw_linf_modelA140_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
+'output_data/untargeted/query_based_un_cw_linf_modelA140_group.txt' u 2:3 with lines ls 4 title 'RG 140', \
+'output_data/untargeted/query_based_un_cw_linf_modelA350_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 6 ps 2 offset character -1, character 1 notitle,\
+'output_data/untargeted/query_based_un_cw_linf_modelA350_group.txt' u 2:3 with lines ls 6 title 'RG 350'
+unset output
+
+set output "plots/random_group_linf_modelA_adv.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key left top
+set title 'Comparing adversarial success using various random feature groupings for Model A adv'
+
+plot 'output_data/untargeted/query_based_un_cw_linf_modelA_adv7_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle,\
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv7_group.txt' u 2:3 with lines ls 1 title 'RG 7', \
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv35_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 2 ps 2 offset character -1, character 1 notitle,\
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv35_group.txt' u 2:3 with lines ls 2 title 'RG 35', \
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv70_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 3 ps 2 offset character -1, character 1 notitle,\
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv70_group.txt' u 2:3 with lines ls 3 title 'RG 70', \
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv140_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 4 ps 2 offset character -1, character 1 notitle,\
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv140_group.txt' u 2:3 with lines ls 4 title 'RG 140', \
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv350_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 6 ps 2 offset character -1, character 1 notitle,\
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv350_group.txt' u 2:3 with lines ls 6 title 'RG 350'
 unset output
