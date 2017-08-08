@@ -20,12 +20,12 @@ FLAGS = flags.FLAGS
 
 RANDOM = True
 BATCH_SIZE = 100
-BATCH_EVAL_NUM = 1
+BATCH_EVAL_NUM = 100
 CLIP_MIN = 0
 CLIP_MAX = 1
 # FEATURE_GROUP_SIZE = 7
-NUM_COMPONENTS = 10
-PCA_FLAG = True
+# NUM_COMPONENTS = 10
+PCA_FLAG = False
 
 def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
     img_count = 0
@@ -63,14 +63,14 @@ def wb_write_out(eps, white_box_error, wb_norm):
         print('Fraction of targets achieved (white-box) for {}: {}'.format(target, white_box_error))
     else:
         if '_un' in args.method:
-            filename = 'output_data/wb_un_'+args.loss_type+'_'+args.norm+'_'+target_model_name
+            filename = 'output_data/untargeted/wb_un_'+args.loss_type+'_'+args.norm+'_'+target_model_name
         else:
-            filename = 'output_data/wb_'+args.loss_type+'_'+args.norm+'_'+target_model_name
+            filename = 'output_data/targeted/wb_'+args.loss_type+'_'+args.norm+'_'+target_model_name
         if args.alpha != 0.0:
             filename += '{:.2f}_rand'.format(args.alpha)
         filename += '.txt'
         ofile = open(filename,'a')
-        # ofile.write('{} {} {} \n'.format(eps, white_box_error, wb_norm))
+        ofile.write('{} {} {} \n'.format(eps, white_box_error, wb_norm))
         print('Fraction of targets achieved (white-box): {}'.format(white_box_error))
     return
 
@@ -80,13 +80,16 @@ def est_write_out(eps, success, avg_l2_perturb):
         ofile.write(' {} \n'.format(success))
         print('Fraction of targets achieved (query-based) with {} for {}: {}'.format(target_model_name, target, success))
     else:
-        filename = 'output_data/'+args.method+'_'+args.loss_type+'_'+args.norm+'_'+target_model_name
+        if '_un' in args.method:
+            filename = 'output_data/untargeted/'+args.method+'_'+args.loss_type+'_'+args.norm+'_'+target_model_name
+        else:
+            filename = 'output_data/targeted/'+args.method+'_'+args.loss_type+'_'+args.norm+'_'+target_model_name
         if args.alpha != 0.0:
             filename += '{:.2f}_rand'.format(args.alpha)
         if args.group_size != 1:
             filename += '{}_group'.format(args.group_size)
         if PCA_FLAG == True:
-            filename += 'pca_{}'.format(NUM_COMPONENTS)
+            filename += 'pca_{}'.format(args.num_comp)
         filename += '.txt'
         ofile = open(filename, 'a')
         ofile.write('{} {} {} {}\n'.format(args.delta, eps, success, avg_l2_perturb))
@@ -102,7 +105,7 @@ def pca_components(X, dim):
     U = (pca.components_).T
     U_norm = normalize(U, axis=0)
 
-    return U_norm[:,:NUM_COMPONENTS]
+    return U_norm[:,:args.num_comp]
 
 
 def xent_est(prediction, x, x_plus_i, x_minus_i, curr_target):
@@ -147,7 +150,7 @@ def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim
         random_indices = np.random.permutation(dim)
         num_groups = dim / args.group_size
     elif PCA_FLAG == True:
-        num_groups = NUM_COMPONENTS
+        num_groups = args.num_comp
     for j in range(num_groups):
         basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
 
@@ -303,8 +306,8 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
     if args.loss_type == 'xent':
         grad = gen_grad(x, logits, y)
     elif args.loss_type == 'cw':
-        real = tf.reduce_sum(targets_cat*logits, 1)
-        other = tf.reduce_max((targets_cat)*logits - (targets_cat*10000), 1)
+        real = tf.reduce_sum(y*logits, 1)
+        other = tf.reduce_max((y)*logits - (y*10000), 1)
         if '_un' in args.method:
             loss = tf.maximum(0.0,real-other+args.conf)
         else:
@@ -331,16 +334,19 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
 
     adv_x_t = K.clip(adv_x_t, CLIP_MIN, CLIP_MAX)
 
-    X_test_slice = X_test[:BATCH_SIZE*BATCH_EVAL_NUM]
-
     X_test_ini_slice = X_test_ini[:BATCH_SIZE*BATCH_EVAL_NUM]
 
-    X_adv_t = K.get_session().run([adv_x_t], feed_dict={x: X_test_slice, y: targets_cat ,K.learning_phase(): 0})[0]
+    X_adv_t = np.zeros_like(X_test)
+
+    for i in range(BATCH_EVAL_NUM):
+        X_test_slice = X_test[i*(BATCH_SIZE):(i+1)*(BATCH_SIZE)]
+        targets_cat_slice = targets_cat[i*(BATCH_SIZE):(i+1)*(BATCH_SIZE)]
+        X_adv_t[i*(BATCH_SIZE):(i+1)*(BATCH_SIZE)] = K.get_session().run([adv_x_t], feed_dict={x: X_test_slice, y: targets_cat_slice, K.learning_phase(): 0})[0]
     # batch_eval([x, y], [adv_x_t], [X_test_slice, targets_cat])[0]
 
-    adv_pred_np = K.get_session().run([prediction], feed_dict={x: X_adv_t, K.learning_phase(): 0})[0]
+    # adv_pred_np = K.get_session().run([prediction], feed_dict={x: X_adv_t, K.learning_phase(): 0})[0]
 
-    wb_img_save(adv_pred_np, targets, eps, X_adv_t)
+    # wb_img_save(adv_pred_np, targets, eps, X_adv_t)
 
     _, _, white_box_error = tf_test_error_rate(target_model, x, X_adv_t, targets_cat)
     if '_un' not in args.method:
@@ -388,13 +394,14 @@ def main(target_model_name, target=None):
     targets_cat = np_utils.to_categorical(targets, FLAGS.NUM_CLASSES).astype(np.float32)
 
     if args.norm == 'linf':
-        # eps_list = list(np.linspace(0.0, 0.1, 5))
-        # eps_list.extend(np.linspace(0.2, 0.5, 7))
-        eps_list = [0.3]
+        eps_list = list(np.linspace(0.0, 0.1, 5))
+        eps_list.extend(np.linspace(0.15, 0.5, 8))
+        # eps_list = [0.3]
     elif args.norm == 'l2':
         eps_list = list(np.linspace(0.0, 2.0, 5))
         eps_list.extend(np.linspace(2.5, 9.0, 14))
         # eps_list = [5.0]
+    print(eps_list)
 
     random_perturb = np.random.randn(*X_test_ini.shape)
 
@@ -429,6 +436,8 @@ if __name__ == "__main__":
                             help="Strength of random perturbation")
     parser.add_argument("--group_size", type=int, default=1,
                             help="Number of features to group together")
+    parser.add_argument("--num_comp", type=int, default=784,
+                            help="Number of pca components")
 
     args = parser.parse_args()
 

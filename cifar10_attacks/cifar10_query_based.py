@@ -21,7 +21,7 @@ NUM_CHANNELS = 3
 
 RANDOM = True
 BATCH_SIZE = 100
-BATCH_EVAL_NUM = 100
+BATCH_EVAL_NUM = 10
 CLIP_MIN = 0
 CLIP_MAX = 255
 # FEATURE_GROUP_SIZE = 7
@@ -70,7 +70,7 @@ def wb_write_out(eps, white_box_error, wb_norm):
             filename += '{:.2f}_rand'.format(args.alpha)
         filename += '.txt'
         ofile = open(filename,'a')
-        # ofile.write('{} {} {} \n'.format(eps, white_box_error, wb_norm))
+        ofile.write('{} {} {} \n'.format(eps, white_box_error, wb_norm))
         print('Fraction of targets achieved (white-box): {}'.format(white_box_error))
     return
 
@@ -437,12 +437,13 @@ elif RANDOM is True:
 targets_cat = np_utils.to_categorical(targets, NUM_CLASSES).astype(np.float32)
 
 if args.norm == 'linf':
-    eps_list = list(np.linspace(0.0, 32.0, 9))
+    eps_list = list(np.linspace(4.0, 32.0, 8))
     # eps_list = [0.0, 4.0]
 elif args.norm == 'l2':
     eps_list = list(np.linspace(0.0, 2.0, 5))
     eps_list.extend(np.linspace(2.5, 9.0, 14))
     # eps_list = [5.0]
+print eps_list
 
 random_perturb = np.random.randn(*X_test_ini.shape)
 
