@@ -10,7 +10,6 @@ FLAGS = flags.FLAGS
 
 CLIP_MIN = 0
 CLIP_MAX = 1
-C_TRIAL = True
 
 def class_means(X, y):
 
