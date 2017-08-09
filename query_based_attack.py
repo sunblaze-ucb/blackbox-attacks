@@ -84,6 +84,8 @@ def est_write_out(eps, success, avg_l2_perturb):
             filename = 'output_data/untargeted/'+args.method+'_'+args.loss_type+'_'+args.norm+'_'+target_model_name
         else:
             filename = 'output_data/targeted/'+args.method+'_'+args.loss_type+'_'+args.norm+'_'+target_model_name
+        if args.delta != 0.01:
+            filename += '_{:.2f}_'.format(args.delta)
         if args.alpha != 0.0:
             filename += '{:.2f}_rand'.format(args.alpha)
         if args.group_size != 1:
@@ -413,8 +415,8 @@ def main(target_model_name, target=None):
         X_test = np.clip(X_test_ini + args.alpha * random_perturb_unit, CLIP_MIN, CLIP_MAX)
 
     for eps in eps_list:
-        white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets,
-                        targets_cat, eps, dim)
+        # white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets,
+                        # targets_cat, eps, dim)
 
         estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, eps, dim)
 

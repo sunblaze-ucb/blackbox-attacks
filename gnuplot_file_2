@@ -335,3 +335,18 @@ plot 'output_data/untargeted/query_based_un_cw_linf_modelA_adv7_group.txt' u 2:3
 'output_data/untargeted/query_based_un_cw_linf_modelA_adv350_group.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 6 ps 2 offset character -1, character 1 notitle,\
 'output_data/untargeted/query_based_un_cw_linf_modelA_adv350_group.txt' u 2:3 with lines ls 6 title 'RG 350'
 unset output
+
+set output "plots/targeted_linf_modelA.png"
+
+set xlabel 'r$\epsilon$'
+set ylabel 'Adversarial success (\%)' offset 2
+set xrange [0:0.5]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key left top
+set title 'Comparing targeted adversarial success against random targets for Model A (MNIST)'
+plot 'output_data/targeted/query_based_cw_linf_modelA.txt' u 2:3:(sprintf("%.1f", $3)) with labels point ls 1 ps 2 offset character -1, character 1 notitle, \
+'output_data/targeted/query_based_cw_linf_modelA.txt' u 2:3 with lines ls 1 title 'FD (CW)', \
+'output_data/targeted/wb_cw_linf_modelA.txt' u 1:2:(sprintf("%.1f", $2)) with labels point ls 2 ps 2 offset character -1, character 1 notitle, \
+'output_data/targeted/wb_cw_linf_modelA.txt' u 1:2 with lines ls 2 title 'FGS (CW)'
+unset output
