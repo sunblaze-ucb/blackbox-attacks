@@ -309,7 +309,7 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
         grad = gen_grad(x, logits, y)
     elif args.loss_type == 'cw':
         real = tf.reduce_sum(y*logits, 1)
-        other = tf.reduce_max((y)*logits - (y*10000), 1)
+        other = tf.reduce_max((1-y)*logits - (y*10000), 1)
         if '_un' in args.method:
             loss = tf.maximum(0.0,real-other+args.conf)
         else:
