@@ -44,6 +44,16 @@ def gen_grad(x, logits, y, loss='logloss'):
     grad = K.gradients(adv_loss, [x])[0]
     return grad
 
+def gen_grad_ens(x, logits, y):
+
+    adv_loss = K.categorical_crossentropy(logits[0], y, from_logits=True)
+    if len(logits) >= 1:
+        for i in range(1, len(logits)):
+            adv_loss += K.categorical_crossentropy(logits[i], y, from_logits=True)
+
+    grad = K.gradients(adv_loss, [x])[0]
+    return adv_loss, grad
+
 def gen_hessian(x, logits, y, loss='logloss'):
 
     adv_loss = gen_adv_loss(logits, y, loss)
