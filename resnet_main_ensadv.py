@@ -114,6 +114,10 @@ def train(hps):
                                    tf.summary.scalar('Precision_benign', precision_benign),
                                    tf.summary.scalar('Precision_adversarial', precision_adv)]))
 
+  keep_hook = tf.train.CheckpointSaverHook(checkpoint_dir=FLAGS.log_root,
+                                           save_steps=800, # for 100 checkpoints
+                                           saver=tf.train.Saver(max_to_keep=None)) # None means keep all
+
   stop_hook = tf.train.StopAtStepHook(last_step=80000)
 
   logging_hook = tf.train.LoggingTensorHook(
@@ -149,7 +153,9 @@ def train(hps):
   with tf.train.MonitoredTrainingSession(
       checkpoint_dir=FLAGS.log_root,
       hooks=[logging_hook, _LearningRateSetterHook()],
-      chief_only_hooks=[summary_hook, stop_hook],
+      chief_only_hooks=[summary_hook, keep_hook, stop_hook],
+      # We provide keep_hook for saving summaries.
+      save_checkpoint_secs=None,
       # Since we provide a SummarySaverHook, we need to disable default
       # SummarySaverHook. To do that we set save_summaries_steps to 0.
       save_summaries_steps=0,
