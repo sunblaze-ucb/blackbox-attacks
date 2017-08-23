@@ -43,7 +43,7 @@ import tarfile
 from six.moves import urllib
 import tensorflow as tf
 
-import cifar10_input_nostd
+from . import cifar10_input_nostd
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -248,7 +248,8 @@ def inference(images):
   # local3
   with tf.variable_scope('local3') as scope:
     # Move everything into depth so we can perform a single matrix multiply.
-    reshape = tf.reshape(pool2, [FLAGS.batch_size, -1])
+    n, h, w, c = pool2.shape
+    reshape = tf.reshape(pool2, [-1, (h * w * c).value])
     dim = reshape.get_shape()[1].value
     weights = _variable_with_weight_decay('weights', shape=[dim, 384],
                                           stddev=0.04, wd=0.004)
