@@ -92,14 +92,18 @@ class CarliniLiEns:
         newimg = tf.clip_by_value(simg + modifier, 0, 1)
 
         model = models[0]
+        outputs = []
+        preds = []
         output = model(newimg)
+        outputs.append(output)
+        preds.append(K.softmax(output))
         orig_output = model(timg)
 
         real = tf.reduce_sum((tlab)*output)
         other = tf.reduce_max((1-tlab)*output - (tlab*10000))
 
         if self.TARGETED:
-            # if targetted, optimize for making the other class most likely
+            # if targeted, optimize for making the other class most likely
             loss1 = tf.maximum(0.0,other-real+self.CONFIDENCE)
         else:
             # if untargeted, optimize for making this class least likely.
@@ -108,6 +112,8 @@ class CarliniLiEns:
             for i in range(1, len(models)):
                 model = models[i]
                 output_tmp = model(newimg)
+                outputs.append(output_tmp)
+                preds.append(K.softmax(output_tmp))
 
                 real = tf.reduce_sum((tlab)*output_tmp)
                 other = tf.reduce_max((1-tlab)*output_tmp - (tlab*10000))
@@ -126,7 +132,7 @@ class CarliniLiEns:
         # setup the adam optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.AdamOptimizer(self.LEARNING_RATE)
-	#optimizer = tf.train.GradientDescentOptimizer(self.LEARNING_RATE)
+        #optimizer = tf.train.GradientDescentOptimizer(self.LEARNING_RATE)
         train = optimizer.minimize(loss, var_list=[modifier])
 
         end_vars = tf.global_variables()
@@ -161,8 +167,12 @@ class CarliniLiEns:
 
                     # it worked
                     if works < .0001*CONST and (self.ABORT_EARLY or step == CONST-1):
-                        get = sess.run(K.softmax(output), feed_dict=feed_dict)
-                        works = compare(get, labs)
+                        works = True
+                        for i in len(outputs):
+                            get = sess.run(preds[i], feed_dict=feed_dict)
+                            works = works & compare(get, labs)
+                        # get = sess.run(K.softmax(output), feed_dict=feed_dict)
+                        # works = compare(get, labs)
                         if works:
                             scores, origscores, nimg = sess.run((output,orig_output,newimg),feed_dict=feed_dict)
                             return scores, origscores, nimg, CONST
@@ -193,7 +203,8 @@ class CarliniLiEns:
         """
         r = []
         i = 0
-        for img,target in tqdm(zip(imgs, targets)):
+        for img,target in zip(imgs, targets):
+            print i
             r.extend(self.attack_single(img, target))
             i += 1
         return np.array(r)
