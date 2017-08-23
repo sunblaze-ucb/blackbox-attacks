@@ -87,7 +87,8 @@ plot 'output_data/baseline/baseline_linf_md_modelA.txt' u 1:2 with lp ls 1 title
 'output_data/untargeted/query_based_un_xent_linf_modelA.txt' u 2:3 with lp ls 3 title '\footnotesize{finite diff (xent)}', \
 'output_data/untargeted/query_based_un_cw_linf_modelA.txt' u 2:3 with lp ls 4 title '\footnotesize{finite diff (CW)}', \
 'output_data/blind_transfer/modelB_to_modelA.txt' u 1:2 with lp ls 6 title '\footnotesize{FGSM (B)}',\
-'output_data/untargeted/wb_un_cw_linf_modelA.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (CW)}'
+'output_data/untargeted/wb_un_cw_linf_modelA.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (CW)}',\
+'output_data/untargeted/wb_un_xent_linf_modelA.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}'
 
 unset output
 
@@ -109,6 +110,7 @@ plot 'output_data/baseline/baseline_linf_md_modelA_adv.txt' u 1:2 with lp ls 1 t
 'output_data/untargeted/query_based_un_cw_linf_modelA_adv.txt' u 2:3 with lp ls 4 title '\footnotesize{finite diff (CW)}', \
 'output_data/blind_transfer/modelB_to_modelA_adv.txt' u 1:2 with lp ls 6 title '\footnotesize{FGSM (B)}',\
 'output_data/untargeted/wb_un_cw_linf_modelA_adv.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (CW)}'
+#'output_data/untargeted/wb_un_xent_linf_modelA_adv.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}'
 
 unset output
 
@@ -129,10 +131,31 @@ plot 'cifar10_attacks/output_data/baseline_linf_md_rand_0.0_thin_32.txt' u 1:3 w
 'cifar10_attacks/output_data/query_based_un_xent_linf_thin_32.txt' u 2:3 with lp ls 3 title '\footnotesize{finite diff (xent)}', \
 'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32.txt' u 2:3 with lp ls 4 title '\footnotesize{finite diff (CW)}', \
 'plots-points/wide-fgsm-to-thin.txt' u 1:($2*100) with lp ls 6 title '\footnotesize{FGSM (wide)}',\
-'cifar10_attacks/output_data/wb_un_cw_linf_thin_32.txt' u 2:3 with lp ls 9 title '\footnotesize{wb FGSM (CW)}', \
-'cifar10_attacks/output_data/wb_un_xent_linf_thin_32.txt' u 2:3 with lp ls 10 title '\footnotesize{wb FGSM (xent)}',
+'cifar10_attacks/output_data/wb_un_cw_linf_thin_32.txt' u 1:2 with lp ls 9 title '\footnotesize{wb FGSM (CW)}', \
+'cifar10_attacks/output_data/wb_un_xent_linf_thin_32.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}',
 
 unset output
+
+set output "latex_plots/finite_diff_baseline_linf_Resnet_32_adv.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [0:32.0]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key left top
+set key box width -10
+set key samplen 2 spacing 0.75
+set title '\small{$\ell_{\infty}$ constrained strategies on Resnet-32 adv}'
+
+plot 'cifar10_attacks/output_data/baseline_linf_md_rand_0.0_thin_32_adv.txt' u 1:3 with lp ls 1 title '\footnotesize{diff. of means}', \
+'cifar10_attacks/output_data/baseline_linf_md_rand_33.0_thin_32_adv.txt' u 2:3 with lp ls 2 title '\footnotesize{random}', \
+'cifar10_attacks/output_data/query_based_un_xent_linf_thin_32_adv.txt' u 2:3 with lp ls 3 title '\footnotesize{finite diff (xent)}', \
+'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_adv.txt' u 2:3 with lp ls 4 title '\footnotesize{finite diff (CW)}', \
+'plots-points/wide-fgsm-to-thin_adv.txt' u 1:($2*100) with lp ls 6 title '\footnotesize{FGSM (wide)}',\
+'cifar10_attacks/output_data/wb_un_cw_linf_thin_32_adv.txt' u 1:2 with lp ls 9 title '\footnotesize{wb FGSM (CW)}', \
+'cifar10_attacks/output_data/wb_un_xent_linf_thin_32_adv.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}',
+
 
 set terminal epslatex size 8cm, 6cm
 set output "latex_plots/random_group_linf_Model_A.tex"
