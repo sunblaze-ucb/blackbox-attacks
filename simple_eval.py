@@ -154,7 +154,7 @@ def main(attack, src_model_name, target_model_names):
     if attack != "second_ord":
         X_adv = batch_eval([x, y], [adv_x], [X_test, Y_test])[0]
 
-    pickle_name = attack + '_adv_samples/' + basename(src_model_name)+'_adv_'+str(args.eps)+'.p'
+    pickle_name = 'adv_samples/' + attack + '/' + basename(src_model_name)+'_'+str(args.eps)+'_adv.p'
     pickle.dump(X_adv, open(pickle_name,'wb'))
     pickle_name = 'orig_images.p'
     pickle.dump(X_test, open(pickle_name, 'wb'))
@@ -163,14 +163,14 @@ def main(attack, src_model_name, target_model_names):
     l = len(X_adv)
 
     preds_adv, orig, err = tf_test_error_rate(src_model, x, X_adv, Y_test[0:l])
-    pickle_name = 'orig_labels.p'
-    pickle.dump(orig, open(pickle_name, 'wb'))
-    pickle_name = attack + '_adv_samples/' + basename(src_model_name)+'_labels_'+str(args.eps)+'.p'
-    pickle.dump(preds_adv, open(pickle_name, 'wb'))
+    # pickle_name = 'orig_labels.p'
+    # pickle.dump(orig, open(pickle_name, 'wb'))
+    # pickle_name = attack + '_adv_samples/' + basename(src_model_name)+'_labels_'+str(args.eps)+'.p'
+    # pickle.dump(preds_adv, open(pickle_name, 'wb'))
 
     preds_orig, _, _ = tf_test_error_rate(src_model,x, X_test, Y_test[0:l])
-    pickle_name = basename(src_model_name)+'_labels.p'
-    pickle.dump(preds_orig, open(pickle_name, 'wb'))
+    # pickle_name = basename(src_model_name)+'_labels.p'
+    # pickle.dump(preds_orig, open(pickle_name, 'wb'))
 
     print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(src_model_name), err)
 
@@ -192,7 +192,7 @@ if __name__ == "__main__":
                         help="FGS attack scale")
     parser.add_argument("--alpha", type=float, default=0.05,
                         help="RAND+FGSM random perturbation scale")
-    parser.add_argument("--steps", type=int, default=10,
+    parser.add_argument("--steps", type=int, default=30,
                         help="Iterated FGS steps")
     parser.add_argument("--kappa", type=float, default=100,
                         help="CW attack confidence")

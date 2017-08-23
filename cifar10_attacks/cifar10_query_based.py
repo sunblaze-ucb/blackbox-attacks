@@ -25,8 +25,8 @@ BATCH_EVAL_NUM = 10
 CLIP_MIN = 0
 CLIP_MAX = 255
 # FEATURE_GROUP_SIZE = 7
-NUM_COMPONENTS = 10
-PCA_FLAG = False
+# NUM_COMPONENTS = 10
+PCA_FLAG = True
 
 def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
     img_count = 0
@@ -86,7 +86,7 @@ def est_write_out(eps, success, avg_l2_perturb):
         if args.group_size != 1:
             filename += '_{}_group'.format(args.group_size)
         if PCA_FLAG == True:
-            filename += '_pca_{}'.format(NUM_COMPONENTS)
+            filename += '_pca_{}'.format(args.num_comp)
         filename += '.txt'
         ofile = open(filename, 'a')
         ofile.write('{} {} {} {}\n'.format(args.delta, eps, success, avg_l2_perturb))
@@ -102,7 +102,7 @@ def pca_components(X, dim):
     U = (pca.components_).T
     U_norm = normalize(U, axis=0)
 
-    return U_norm[:,:NUM_COMPONENTS]
+    return U_norm[:,:args.num_comp]
 
 
 def xent_est(prediction, x, x_plus_i, x_minus_i, curr_target):
@@ -141,7 +141,7 @@ def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim
         random_indices = np.random.permutation(dim)
         num_groups = dim / args.group_size
     elif PCA_FLAG == True:
-        num_groups = NUM_COMPONENTS
+        num_groups = args.num_comp
     for j in range(num_groups):
         if j%100==0:
             print('Group no.:{}'.format(j))
@@ -383,6 +383,8 @@ parser.add_argument("--alpha", type=float, default=0.0,
                         help="Strength of random perturbation")
 parser.add_argument("--group_size", type=int, default=1,
                         help="Number of features to group together")
+parser.add_argument("--num_comp", type=int, default=3072,
+                        help="Number of pca components")
 
 args = parser.parse_args()
 
@@ -438,7 +440,7 @@ targets_cat = np_utils.to_categorical(targets, NUM_CLASSES).astype(np.float32)
 
 if args.norm == 'linf':
     eps_list = list(np.linspace(4.0, 32.0, 8))
-    # eps_list = [0.0, 4.0]
+    # eps_list = [16.0]
 elif args.norm == 'l2':
     eps_list = list(np.linspace(0.0, 2.0, 5))
     eps_list.extend(np.linspace(2.5, 9.0, 14))
@@ -455,7 +457,7 @@ elif args.norm == 'l2':
     X_test = np.clip(X_test_ini + args.alpha * random_perturb_unit, CLIP_MIN, CLIP_MAX)
 
 for eps in eps_list:
-    white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets,
-                    targets_cat, eps, dim)
+    # white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets,
+                    # targets_cat, eps, dim)
 
     estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, eps, dim)
