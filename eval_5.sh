@@ -39,17 +39,29 @@ predict_and_compare() { # src dst ckpt_dir [offset]
 # predict_and_compare thin_fgsmlogit_targeted_8 tutorial_adv tutorial/train_adv
 # predict_and_compare thin_fgsmlogit_targeted_8 tutorial_ensadv tutorial/train_ensadv
 
-# opt
+# 8 opt
 
-predict_and_compare thin_opt_targeted_8 thin log 6705
-predict_and_compare thin_opt_targeted_8 thin_adv log_adv 6705
-predict_and_compare thin_opt_targeted_8 thin_ensadv log_ensadv 6705
-predict_and_compare thin_opt_targeted_8 wide log_wide 6705
-predict_and_compare thin_opt_targeted_8 wide_adv log_adv_wide 6705
-predict_and_compare thin_opt_targeted_8 wide_ensadv log_ensadv_wide 6705
-predict_and_compare thin_opt_targeted_8 tutorial tutorial/train 6705
-predict_and_compare thin_opt_targeted_8 tutorial_adv tutorial/train_adv 6705
-predict_and_compare thin_opt_targeted_8 tutorial_ensadv tutorial/train_ensadv 6705
+# predict_and_compare thin_opt_targeted_8 thin log 6705
+# predict_and_compare thin_opt_targeted_8 thin_adv log_adv 6705
+# predict_and_compare thin_opt_targeted_8 thin_ensadv log_ensadv 6705
+# predict_and_compare thin_opt_targeted_8 wide log_wide 6705
+# predict_and_compare thin_opt_targeted_8 wide_adv log_adv_wide 6705
+# predict_and_compare thin_opt_targeted_8 wide_ensadv log_ensadv_wide 6705
+# predict_and_compare thin_opt_targeted_8 tutorial tutorial/train 6705
+# predict_and_compare thin_opt_targeted_8 tutorial_adv tutorial/train_adv 6705
+# predict_and_compare thin_opt_targeted_8 tutorial_ensadv tutorial/train_ensadv 6705
+
+# 8 iterative gradient sign
+
+predict_and_compare thin_itergs_targeted_8 thin log
+predict_and_compare thin_itergs_targeted_8 thin_adv log_adv
+predict_and_compare thin_itergs_targeted_8 thin_ensadv log_ensadv
+predict_and_compare thin_itergs_targeted_8 wide log_wide
+predict_and_compare thin_itergs_targeted_8 wide_adv log_adv_wide
+predict_and_compare thin_itergs_targeted_8 wide_ensadv log_ensadv_wide
+predict_and_compare thin_itergs_targeted_8 tutorial tutorial/train
+predict_and_compare thin_itergs_targeted_8 tutorial_adv tutorial/train_adv
+predict_and_compare thin_itergs_targeted_8 tutorial_ensadv tutorial/train_ensadv
 
 # 16
 
