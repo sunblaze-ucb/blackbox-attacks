@@ -13,10 +13,8 @@ ckpt_dir = sys.argv[2]
 epsilon = float(sys.argv[3])
 
 images_array = np.load('test_orig.npy')
-# labels_array = np.load('test_labels.npy')
 targets_array = np.load('test_random_targets.npy')
 images_batches = images_array.reshape((100, 100, 32, 32, 3))
-# labels_batches = labels_array.reshape((100, 100, 10))
 targets_batches = targets_array.reshape((100, 100, 10))
 
 images = tf.placeholder(shape=(100, 32, 32, 3), dtype=tf.float32)
@@ -30,7 +28,7 @@ loss = other_logits - target_logits
 
 grads, = tf.gradients(loss, images, name='gradients_fgsm')
 perturbation = epsilon * tf.sign(grads)
-adv_images = tf.stop_gradient(tf.clip_by_value(images + perturbation, 0., 255.))
+adv_images = tf.stop_gradient(tf.clip_by_value(images - perturbation, 0., 255.))
 
 sess = tf.Session()
 net.load(sess)

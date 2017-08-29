@@ -28,7 +28,7 @@ def load_model(ckpt_dir, batch_size, input_node, labels_node=None, first_var=0):
             def get_logits(self):
                 return m.logits
             def get_loss(self):
-                return m.cost
+                return m.cost_no_decay # %%%
             def load(self, session):
                 saver = tf.train.Saver(my_vars)
                 ckpt_state = tf.train.get_checkpoint_state(ckpt_dir)

@@ -4,6 +4,8 @@ import numpy as np
 
 # usage: python compare_preds.py a.npy b.npy [a_offset]
 
+# Criteria: f(x') != f(x)
+
 a = np.load(sys.argv[1])
 b = np.load(sys.argv[2])
 

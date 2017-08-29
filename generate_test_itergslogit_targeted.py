@@ -6,7 +6,7 @@ import tqdm
 
 import models
 
-# usage: python generate_test_itergs_targeted.py <destination> <ckpt_dir> <epsilon> <step_size> <num_steps>
+# usage: python generate_test_itergslogit_targeted.py <destination> <ckpt_dir> <epsilon> <step_size> <num_steps>
 
 dest = sys.argv[1]
 ckpt_dir = sys.argv[2]
@@ -22,10 +22,15 @@ targets_batches = targets_array.reshape((100, 100, 10))
 images = tf.placeholder(shape=(100, 32, 32, 3), dtype=tf.float32)
 labels = tf.placeholder(shape=(100, 10), dtype=tf.float32)
 net = models.load_model(ckpt_dir, 100, images, labels)
-loss = -net.get_loss() # for targeted, use minus loss and pass targets as labels
+
+logits = net.get_logits()
+target_logits = tf.reduce_sum(logits * labels, axis=1)
+other_logits = tf.reduce_max(logits * (1 - labels) - 1e5 * labels, axis=1)
+loss = other_logits - target_logits
+
 grads, = tf.gradients(loss, images, name='gradients_adv')
 perturbation = step_size * tf.sign(grads)
-adv_images = tf.stop_gradient(tf.clip_by_value(images + perturbation, 0., 255.))
+adv_images = tf.stop_gradient(tf.clip_by_value(images - perturbation, 0., 255.))
 
 sess = tf.Session()
 net.load(sess)
