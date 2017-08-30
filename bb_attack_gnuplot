@@ -1,4 +1,4 @@
-set terminal epslatex size 12cm, 9cm
+set terminal epslatex size 8cm, 6cm
 # set terminal png size 1200,900 noenhanced
 
 # Line style for axes
@@ -74,21 +74,24 @@ set output "latex_plots/finite_diff_baseline_linf_Model_A.tex"
 
 set xlabel '$\epsilon$'
 set ylabel '\small{Adversarial success (\%)}' offset 2
-set xrange [0:0.5]
+set xrange [0:0.4]
 set yrange [0:100]
 # set margins 3, 1, 2, 2
-set key left top
+set key out horiz
+set key bottom
 set key box width -10
-set key samplen 2 spacing 0.75
+set key samplen 1 spacing 0.5
 set title '\small{$\ell_{\infty}$ constrained strategies on Model A}'
 
-plot 'output_data/baseline/baseline_linf_md_modelA.txt' u 1:2 with lp ls 1 title '\footnotesize{diff. of means}', \
-'output_data/baseline/baseline_linf_md_rand_0.51_modelA.txt' u 2:3 with lp ls 2 title '\footnotesize{random}', \
-'output_data/untargeted/query_based_un_xent_linf_modelA.txt' u 2:3 with lp ls 3 title '\footnotesize{finite diff (xent)}', \
-'output_data/untargeted/query_based_un_cw_linf_modelA.txt' u 2:3 with lp ls 4 title '\footnotesize{finite diff (CW)}', \
-'output_data/blind_transfer/modelB_to_modelA.txt' u 1:2 with lp ls 6 title '\footnotesize{FGSM (B)}',\
-'output_data/untargeted/wb_un_cw_linf_modelA.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (CW)}',\
-'output_data/untargeted/wb_un_xent_linf_modelA.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}'
+plot 'output_data/baseline/baseline_linf_md_modelA.txt' u 1:2 with lp ls 1 title '\footnotesize{\dom}', \
+'output_data/baseline/baseline_linf_md_rand_0.51_modelA.txt' u 2:3 with lp ls 2 title '\footnotesize{\rand}', \
+'output_data/untargeted/query_based_un_xent_linf_modelA.txt' u 2:3 with lp ls 3 title '\footnotesize{FD (xent)}', \
+'output_data/untargeted/query_based_un_cw_linf_modelA.txt' u 2:3 with lp ls 4 title '\footnotesize{FD (logit)}', \
+'output_data/untargeted/query_based_un_cw_linf_modelApca_100.txt' u 2:3 with lp ls 5 title '\footnotesize{QR (PCA-100, logit) }', \
+'output_data/blind_transfer/modelB_to_modelA.txt' u 1:2 with lp ls 6 title '\footnotesize{B (FGS, xent)}',\
+'output_data/blind_transfer/modelB_to_modelA_cw.txt' u 1:2 with lp ls 10 title '\footnotesize{B (FGS, logit)}',\
+'output_data/untargeted/wb_un_cw_linf_modelA.txt' u 1:2 with lp ls 26 title '\footnotesize{WB FGS (logit)}',\
+'output_data/untargeted/wb_un_xent_linf_modelA.txt' u 1:2 with lp ls 33 title '\footnotesize{WB FGS (xent)}'
 
 unset output
 
@@ -96,21 +99,24 @@ set output "latex_plots/finite_diff_baseline_linf_Model_A_adv.tex"
 
 set xlabel '$\epsilon$'
 set ylabel '\small{Adversarial success (\%)}' offset 2
-set xrange [0:0.5]
+set xrange [0:0.4]
 set yrange [0:100]
 # set margins 3, 1, 2, 2
-set key left top
+set key bottom
 set key box width -10
-set key samplen 2 spacing 0.75
+set key samplen 1 spacing 0.5
 set title '\small{$\ell_{\infty}$ constrained strategies on Model A adv}'
 
-plot 'output_data/baseline/baseline_linf_md_modelA_adv.txt' u 1:2 with lp ls 1 title '\footnotesize{diff. of means}', \
-'output_data/baseline/baseline_linf_md_rand_0.51_modelA_adv.txt' u 2:3 with lp ls 2 title '\footnotesize{random}', \
-'output_data/untargeted/query_based_un_xent_linf_modelA_adv.txt' u 2:3 with lp ls 3 title '\footnotesize{finite diff (xent)}', \
-'output_data/untargeted/query_based_un_cw_linf_modelA_adv.txt' u 2:3 with lp ls 4 title '\footnotesize{finite diff (CW)}', \
-'output_data/blind_transfer/modelB_to_modelA_adv.txt' u 1:2 with lp ls 6 title '\footnotesize{FGSM (B)}',\
-'output_data/untargeted/wb_un_cw_linf_modelA_adv.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (CW)}'
-#'output_data/untargeted/wb_un_xent_linf_modelA_adv.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}'
+plot 'output_data/baseline/baseline_linf_md_modelA_adv.txt' u 1:2 with lp ls 1 title '\footnotesize{D. of M.}', \
+'output_data/baseline/baseline_linf_md_rand_0.51_modelA_adv.txt' u 2:3 with lp ls 2 title '\footnotesize{Rand.}', \
+'output_data/untargeted/query_based_un_xent_linf_modelA_adv.txt' u 2:3 with lp ls 3 title '\footnotesize{FD (xent)}', \
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv.txt' u 2:3 with lp ls 4 title '\footnotesize{FD (logit)}', \
+'output_data/blind_transfer/modelB_to_modelA_adv.txt' u 1:2 with lp ls 5 title '\footnotesize{B (FGS, xent)}',\
+'output_data/blind_transfer/modelB_to_modelA_adv_cw.txt' u 1:2 with lp ls 6 title '\footnotesize{B (FGS, logit)}',\
+'output_data/untargeted/wb_un_cw_linf_modelA_adv.txt' u 1:2 with lp ls 10 title '\footnotesize{WB FGS (logit)}',\
+'output_data/untargeted/wb_un_xent_linf_modelA_adv.txt' u 1:2 with lp ls 26 title '\footnotesize{WB FGS (xent)}',\
+'output_data/untargeted/query_based_un_cw_linf_modelA_adv0.05_rand.txt' u 2:3 with lp ls 31 title '\footnotesize{Rand FD}', \
+'output_data/untargeted/wb_un_cw_linf_modelA_adv0.05_rand.txt' u 1:2 with lp ls 7 title '\footnotesize{Rand FGS}'
 
 unset output
 
@@ -120,18 +126,20 @@ set xlabel '$\epsilon$'
 set ylabel '\small{Adversarial success (\%)}' offset 2
 set xrange [0:32.0]
 set yrange [0:100]
-# set margins 3, 1, 2, 2
-set key left top
+#set margins 3, 3, 3, 3
+set key out horiz
+set key bottom
 set key box width -10
-set key samplen 2 spacing 0.75
+set key samplen 1 spacing 0.5
 set title '\small{$\ell_{\infty}$ constrained strategies on Resnet-32}'
 
-plot 'cifar10_attacks/output_data/baseline_linf_md_rand_0.0_thin_32.txt' u 1:3 with lp ls 1 title '\footnotesize{diff. of means}', \
-'cifar10_attacks/output_data/baseline_linf_md_rand_33.0_thin_32.txt' u 2:3 with lp ls 2 title '\footnotesize{random}', \
-'cifar10_attacks/output_data/query_based_un_xent_linf_thin_32.txt' u 2:3 with lp ls 3 title '\footnotesize{finite diff (xent)}', \
-'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32.txt' u 2:3 with lp ls 4 title '\footnotesize{finite diff (CW)}', \
-'plots-points/wide-fgsm-to-thin.txt' u 1:($2*100) with lp ls 6 title '\footnotesize{FGSM (wide)}',\
-'cifar10_attacks/output_data/wb_un_cw_linf_thin_32.txt' u 1:2 with lp ls 9 title '\footnotesize{wb FGSM (CW)}', \
+plot 'cifar10_attacks/output_data/baseline_linf_md_rand_0.0_thin_32.txt' u 1:3 with lp ls 1 title '\footnotesize{D. of M.}', \
+'cifar10_attacks/output_data/baseline_linf_md_rand_33.0_thin_32.txt' u 2:3 with lp ls 2 title '\footnotesize{Rand.}', \
+'cifar10_attacks/output_data/query_based_un_xent_linf_thin_32.txt' u 2:3 with lp ls 3 title '\footnotesize{FD (xent)}', \
+'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32.txt' u 2:3 with lp ls 4 title '\footnotesize{FD (logit)}', \
+'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_pca_400.txt' u 2:3 with lp ls 28 title '\footnotesize{QR (PCA-400, logit)}', \
+'plots-points/wide-fgsm-to-thin.txt' u 1:($2*100) with lp ls 6 title '\footnotesize{28-10 (FGS, xent)}',\
+'cifar10_attacks/output_data/wb_un_cw_linf_thin_32.txt' u 2:3 with lp ls 9 title '\footnotesize{wb FGSM (logit)}', \
 'cifar10_attacks/output_data/wb_un_xent_linf_thin_32.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}',
 
 unset output
@@ -143,21 +151,21 @@ set ylabel '\small{Adversarial success (\%)}' offset 2
 set xrange [0:32.0]
 set yrange [0:100]
 # set margins 3, 1, 2, 2
-set key left top
+set key out horiz
+set key bottom
 set key box width -10
-set key samplen 2 spacing 0.75
+set key samplen 1 spacing 0.5
 set title '\small{$\ell_{\infty}$ constrained strategies on Resnet-32 adv}'
 
-plot 'cifar10_attacks/output_data/baseline_linf_md_rand_0.0_thin_32_adv.txt' u 1:3 with lp ls 1 title '\footnotesize{diff. of means}', \
-'cifar10_attacks/output_data/baseline_linf_md_rand_33.0_thin_32_adv.txt' u 2:3 with lp ls 2 title '\footnotesize{random}', \
-'cifar10_attacks/output_data/query_based_un_xent_linf_thin_32_adv.txt' u 2:3 with lp ls 3 title '\footnotesize{finite diff (xent)}', \
-'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_adv.txt' u 2:3 with lp ls 4 title '\footnotesize{finite diff (CW)}', \
-'plots-points/wide-fgsm-to-thin_adv.txt' u 1:($2*100) with lp ls 6 title '\footnotesize{FGSM (wide)}',\
-'cifar10_attacks/output_data/wb_un_cw_linf_thin_32_adv.txt' u 1:2 with lp ls 9 title '\footnotesize{wb FGSM (CW)}', \
+plot 'cifar10_attacks/output_data/baseline_linf_md_rand_0.0_thin_32_adv.txt' u 1:3 with lp ls 1 title '\footnotesize{D. of M.}', \
+'cifar10_attacks/output_data/baseline_linf_md_rand_33.0_thin_32_adv.txt' u 2:3 with lp ls 2 title '\footnotesize{Rand.}', \
+'cifar10_attacks/output_data/query_based_un_xent_linf_thin_32_adv.txt' u 2:3 with lp ls 3 title '\footnotesize{FD (xent)}', \
+'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_adv.txt' u 2:3 with lp ls 4 title '\footnotesize{FD (logit)}', \
+'plots-points/wide-fgsm-to-thin_adv.txt' u 1:($2*100) with lp ls 6 title '\footnotesize{28-10 (FGS, xent)}',\
+'cifar10_attacks/output_data/wb_un_cw_linf_thin_32_adv.txt' u 1:2 with lp ls 9 title '\footnotesize{wb FGSM (logit)}', \
 'cifar10_attacks/output_data/wb_un_xent_linf_thin_32_adv.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}',
 
 
-set terminal epslatex size 8cm, 6cm
 set output "latex_plots/random_group_linf_Model_A.tex"
 
 set xlabel '$\epsilon$'
@@ -165,9 +173,9 @@ set ylabel '\small{Adversarial success (\%)}' offset 2
 set xrange [0:0.5]
 set yrange [0:100]
 # set margins 3, 1, 2, 2
-set key left top
+set key bottom
 set key box width -2
-set key samplen 1 spacing 0.75
+set key samplen 1 spacing 0.5
 set title '\small{Random feature groupings for Model A}'
 
 plot 'output_data/untargeted/query_based_un_cw_linf_modelA.txt' u 2:3 with lp ls 1 title '\footnotesize{None}', \
@@ -182,30 +190,31 @@ set output "latex_plots/pca_group_linf_Model_A.tex"
 
 set xlabel '$\epsilon$'
 set ylabel '\small{Adversarial success (\%)}' offset 2
-set xrange [0.1:0.5]
+set xrange [0.1:0.4]
 set yrange [0:100]
 # set margins 3, 1, 2, 2
-set key right bottom
+set key bottom
 set key box width -2
-set key samplen 1 spacing 0.75
+set key samplen 1 spacing 0.5
 set title '\small{PCA-based query reduction for Model A}'
 
 plot 'output_data/untargeted/query_based_un_cw_linf_modelA.txt' u 2:3 with lp ls 1 title '\footnotesize{None}', \
-'output_data/untargeted/query_based_un_cw_linf_modelApca_10.txt' u 2:3 with lp ls 2 title '\footnotesize{10}', \
-'output_data/untargeted/query_based_un_cw_linf_modelApca_50.txt' u 2:3 with lp ls 3 title '\footnotesize{50}', \
-'output_data/untargeted/query_based_un_cw_linf_modelApca_100.txt' u 2:3 with lp ls 4 title '\footnotesize{100}', \
+'output_data/untargeted/query_based_un_cw_linf_modelApca_400.txt' u 2:3 with lp ls 10 title '\footnotesize{400}',\
 'output_data/untargeted/query_based_un_cw_linf_modelApca_200.txt' u 2:3 with lp ls 5 title '\footnotesize{200}', \
-'output_data/untargeted/query_based_un_cw_linf_modelApca_400.txt' u 2:3 with lp ls 10 title '\footnotesize{400}'
+'output_data/untargeted/query_based_un_cw_linf_modelApca_100.txt' u 2:3 with lp ls 4 title '\footnotesize{100}', \
+'output_data/untargeted/query_based_un_cw_linf_modelApca_50.txt' u 2:3 with lp ls 3 title '\footnotesize{50}', \
+'output_data/untargeted/query_based_un_cw_linf_modelApca_10.txt' u 2:3 with lp ls 2 title '\footnotesize{10}'
+
 unset output
 
 set output "latex_plots/FD_FGSM_rand_linf_Model_A_def.tex"
 
 set xlabel '$\epsilon$'
 set ylabel '\small{Adversarial success (\%)}' offset 2
-set xrange [0.1:0.5]
+set xrange [0.1:0.4]
 set yrange [0:100]
 # set margins 3, 1, 2, 2
-set key top left
+set key bottom
 set key box width -2
 set key samplen 1 spacing 0.5
 set title '\small{FD vs RAND-FGSM for Model A variants}'
@@ -216,4 +225,25 @@ plot 'output_data/untargeted/query_based_un_cw_linf_modelA_adv0.05_rand.txt' u 2
 'output_data/untargeted/wb_un_cw_linf_modelA_ens_0.3_linf_ACD0.05_rand.txt' u 1:2 with lp ls 4 title '\footnotesize{ens, FGSM}', \
 'output_data/untargeted/query_based_un_cw_linf_modelA_adv_0.3_linf_iter0.05_rand.txt' u 2:3 with lp ls 5 title '\footnotesize{iter, FD}', \
 'output_data/untargeted/wb_un_cw_linf_modelA_adv_0.3_linf_iter0.05_rand.txt' u 1:2 with lp ls 10 title '\footnotesize{iter, FGSM}'
+unset output
+
+set output "latex_plots/pca_group_linf_Resnet_32.tex"
+
+set xlabel '$\epsilon$'
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set xrange [4.0:32.0]
+set yrange [0:100]
+# set margins 3, 1, 2, 2
+set key bottom
+set key box width -2
+set key samplen 1 spacing 0.75
+set title '\small{PCA-based query reduction for \Rthin}'
+
+plot 'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32.txt' u 2:3 with lp ls 1 title '\footnotesize{None}', \
+'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_pca_400.txt' u 2:3 with lp ls 10 title '\footnotesize{400}',\
+'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_pca_200.txt' u 2:3 with lp ls 5 title '\footnotesize{200}', \
+'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_pca_100.txt' u 2:3 with lp ls 4 title '\footnotesize{100}', \
+'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_pca_50.txt' u 2:3 with lp ls 3 title '\footnotesize{50}', \
+'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_pca_10.txt' u 2:3 with lp ls 2 title '\footnotesize{10}'
+
 unset output
