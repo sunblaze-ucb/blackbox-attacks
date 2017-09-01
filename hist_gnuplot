@@ -1,0 +1,23 @@
+#set terminal pngcairo  transparent enhanced font "arial,10" fontscale 1.0 size 600, 400
+#set output 'histograms.2.png
+set terminal epslatex size 12cm, 9cm
+
+set output 'latex_plots/query_iter_hist.tex'
+set grid nopolar
+set grid noxtics nomxtics ytics nomytics noztics nomztics \
+ nox2tics nomx2tics noy2tics nomy2tics nocbtics nomcbtics
+set grid layerdefault   lt 0 linewidth 0.500,  lt 0 linewidth 0.500
+set ylabel '\small{Adversarial success (\%)}' offset 2
+set yrange [0:100]
+set key out right
+set key width -10
+set key samplen 1 spacing 1
+set style data histogram
+set style histogram gap 10
+set style histogram cluster gap 2
+set style fill solid border -1
+#set boxwidth 0.9
+set xtic rotate by 0 scale 0
+set title '\small{\textgm{IFD-QR (PCA-400, logit)} across models}'
+#set bmargin 10
+plot 'iterative_qr_fd.txt' using 2:xtic(1) ti col, '' using 3 ti col, '' using 4 ti col
