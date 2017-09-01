@@ -19,22 +19,26 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 RANDOM = True
-BATCH_SIZE = 100
-BATCH_EVAL_NUM = 100
+BATCH_SIZE = 1
+BATCH_EVAL_NUM = 1
 CLIP_MIN = 0
 CLIP_MAX = 1
 # FEATURE_GROUP_SIZE = 7
 # NUM_COMPONENTS = 10
-PCA_FLAG = False
 
 def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
     img_count = 0
-    for k in range(30):
+    for k in range(1):
         adv_label_wb = np.argmax(adv_pred_np[k].reshape(1, FLAGS.NUM_CLASSES),1)
         if adv_label_wb[0] != targets[k]:
-            img.imsave( 'images/wb/'+args.norm+'/'+args.loss_type+'{}_{}_{}_{}_{}.png'.format(target_model_name,
-                adv_label_wb, targets[k], eps, args.alpha),
-                X_adv_t[k].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS)*255, cmap='gray')
+            if '_iter' not in args.method:
+                img.imsave('paper_images/wb_'+args.norm+'_'+args.loss_type+'_{}_{}_{}_{}_{}.png'.format(target_model_name,
+                    adv_label_wb, targets[k], eps, args.alpha),
+                    X_adv_t[k].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS)*255, cmap='gray')
+            else:
+                img.imsave('paper_images/wb_iter_'+args.norm+'_'+args.loss_type+'_{}_{}_{}_{}_{}.png'.format(target_model_name,
+                    adv_label_wb, targets[k], eps, args.alpha),
+                    X_adv_t[k].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS)*255, cmap='gray')
             img_count += 1
         if img_count >=10:
             return
@@ -43,13 +47,13 @@ def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
 def est_img_save(i, adv_prediction, curr_target, eps, x_adv):
     img_count = 0
     if i==0:
-        for k in range(30):
+        for k in range(1):
             adv_label = np.argmax(adv_prediction[k].reshape(1, FLAGS.NUM_CLASSES),1)
             if adv_label[0] != curr_target[k]:
-                img.imsave( 'images/'+args.method+'/'+args.norm+'/'+args.loss_type+
+                img.imsave( 'paper_images/'+args.method+'_'+args.norm+'_'+args.loss_type+
                                 '_{}_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
                                 adv_label, curr_target[k], eps, args.delta, args.alpha,
-                                args.group_size),
+                                args.num_comp),
                     x_adv[k].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS)*255, cmap='gray')
                 img_count += 1
             if img_count >= 10:
@@ -80,7 +84,7 @@ def wb_write_out(eps, white_box_error, wb_norm):
         print('Fraction of targets achieved (white-box): {}'.format(white_box_error))
     return
 
-def est_write_out(eps, success, avg_l2_perturb):
+def est_write_out(eps, success, avg_l2_perturb, X_adv=None):
     if RANDOM is False:
         ofile = open('output_data/'+args.method+'_'+args.loss_type+'_'+args.norm+'_classwise'+str(eps)+'_'+str(target_model_name)+'.txt', 'a')
         ofile.write(' {} \n'.format(success))
@@ -98,6 +102,8 @@ def est_write_out(eps, success, avg_l2_perturb):
             filename += '{}_group'.format(args.group_size)
         if PCA_FLAG == True:
             filename += 'pca_{}'.format(args.num_comp)
+        saver_name = filename +'.npy'
+        np.save(saver_name, X_adv)
         filename += '.txt'
         ofile = open(filename, 'a')
         ofile.write('{} {} {} {}\n'.format(args.delta, eps, success, avg_l2_perturb))
@@ -244,6 +250,7 @@ def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, ep
     avg_l2_perturb = 0
     time1 = time.time()
     U = None
+    X_adv = np.zeros((BATCH_SIZE*BATCH_EVAL_NUM, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
     if PCA_FLAG == True:
         U = pca_components(X_test, dim)
     for i in range(BATCH_EVAL_NUM):
@@ -285,6 +292,7 @@ def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, ep
 
         # Getting the norm of the perturbation
         perturb_norm = np.linalg.norm((x_adv-curr_sample_ini).reshape(BATCH_SIZE, dim), axis=1)
+        X_adv[i*BATCH_SIZE:(i+1)*BATCH_SIZE] = x_adv.reshape((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, 1))
         perturb_norm_batch = np.mean(perturb_norm)
         avg_l2_perturb += perturb_norm_batch
 
@@ -300,7 +308,7 @@ def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, ep
 
     avg_l2_perturb = avg_l2_perturb/BATCH_EVAL_NUM
 
-    est_write_out(eps, success, avg_l2_perturb)
+    est_write_out(eps, success, avg_l2_perturb, X_adv)
 
     time2 = time.time()
     print('Average l2 perturbation: {}'.format(avg_l2_perturb))
@@ -313,6 +321,7 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
     avg_l2_perturb = 0
     time1 = time.time()
     U = None
+    X_adv = np.zeros((BATCH_SIZE*BATCH_EVAL_NUM, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
     if PCA_FLAG == True:
         U = pca_components(X_test, dim)
     for i in range(BATCH_EVAL_NUM):
@@ -324,7 +333,9 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
         curr_target = targets[i*BATCH_SIZE:(i+1)*BATCH_SIZE]
         eps_mod = eps - args.alpha
 
-        for i in range(args.num_iter):
+        for j in range(args.num_iter):
+            if j % 10 == 0:
+                print j
             curr_prediction = K.get_session().run([prediction], feed_dict={x: curr_sample, K.learning_phase(): 0})[0]
 
             p_t = curr_prediction[np.arange(BATCH_SIZE), list(curr_target)]
@@ -362,6 +373,7 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
         avg_l2_perturb += perturb_norm_batch
 
         adv_prediction = K.get_session().run([prediction], feed_dict={x: x_adv, K.learning_phase(): 0})[0]
+        X_adv[i*BATCH_SIZE:(i+1)*BATCH_SIZE] = x_adv.reshape((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, 1))
         success += np.sum(np.argmax(adv_prediction,1) == curr_target)
 
         est_img_save(i, adv_prediction, curr_target, eps, x_adv)
@@ -373,7 +385,7 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
 
     avg_l2_perturb = avg_l2_perturb/BATCH_EVAL_NUM
 
-    est_write_out(eps, success, avg_l2_perturb)
+    est_write_out(eps, success, avg_l2_perturb, X_adv)
 
     time2 = time.time()
     print('Average l2 perturbation: {}'.format(avg_l2_perturb))
@@ -383,7 +395,7 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
 
 
 def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim):
-
+    time1 = time.time()
     #Get gradient from model
     if args.loss_type == 'xent':
         grad = gen_grad(x, logits, y)
@@ -427,9 +439,9 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
         X_adv_t[i*(BATCH_SIZE):(i+1)*(BATCH_SIZE)] = K.get_session().run([adv_x_t], feed_dict={x: X_test_slice, y: targets_cat_slice, K.learning_phase(): 0})[0]
     # batch_eval([x, y], [adv_x_t], [X_test_slice, targets_cat])[0]
 
-    # adv_pred_np = K.get_session().run([prediction], feed_dict={x: X_adv_t, K.learning_phase(): 0})[0]
+    adv_pred_np = K.get_session().run([prediction], feed_dict={x: X_adv_t, K.learning_phase(): 0})[0]
 
-    # wb_img_save(adv_pred_np, targets, eps, X_adv_t)
+    wb_img_save(adv_pred_np, targets, eps, X_adv_t)
 
     _, _, white_box_error = tf_test_error_rate(target_model, x, X_adv_t, targets_cat_mod)
     if '_un' not in args.method:
@@ -437,6 +449,8 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
 
     wb_norm = np.mean(np.linalg.norm((X_adv_t-X_test_ini_slice).reshape(BATCH_SIZE*BATCH_EVAL_NUM, dim), axis=1))
     print('Average white-box l2 perturbation: {}'.format(wb_norm))
+    time2= time.time()
+    print('Total time: {}, Average time: {}'.format(time2-time1, (time2 - time1)/(BATCH_SIZE*BATCH_EVAL_NUM)))
 
     wb_write_out(eps, white_box_error, wb_norm)
 
@@ -492,9 +506,9 @@ def white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_i
             X_adv_curr = X_test_ini_slice + r
         X_adv_t[i*(BATCH_SIZE):(i+1)*(BATCH_SIZE)] = np.clip(X_adv_curr, CLIP_MIN, CLIP_MAX)
 
-    # adv_pred_np = K.get_session().run([prediction], feed_dict={x: X_adv_t, K.learning_phase(): 0})[0]
+    adv_pred_np = K.get_session().run([prediction], feed_dict={x: X_adv_t, K.learning_phase(): 0})[0]
 
-    # wb_img_save(adv_pred_np, targets, eps, X_adv_t)
+    wb_img_save(adv_pred_np, targets, eps, X_adv_t)
 
     _, _, white_box_error = tf_test_error_rate(target_model, x, X_adv_t, targets_cat_mod)
     if '_un' not in args.method:
@@ -552,8 +566,9 @@ def main(target_model_name, target=None):
     targets_cat = np_utils.to_categorical(targets, FLAGS.NUM_CLASSES).astype(np.float32)
 
     if args.norm == 'linf':
-        eps_list = list(np.linspace(0.0, 0.1, 5))
-        eps_list.extend(np.linspace(0.15, 0.5, 8))
+        # eps_list = list(np.linspace(0.025, 0.1, 4))
+        # eps_list.extend(np.linspace(0.15, 0.5, 8))
+        eps_list = [0.3]
         if "_iter" in args.method:
             eps_list = [0.3]
     elif args.norm == 'l2':
@@ -577,7 +592,7 @@ def main(target_model_name, target=None):
             estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logits, eps, dim, args.beta)
         else:
             white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim)
-            # estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, eps, dim)
+            estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, eps, dim)
 
 if __name__ == "__main__":
     import argparse
@@ -612,6 +627,9 @@ if __name__ == "__main__":
 
     if '_un' in args.method:
         RANDOM = True
+    PCA_FLAG=False
+    if args.num_comp != 784:
+        PCA_FLAG = True
 
     if RANDOM is False:
         ofile = open('output_data/'+args.method+'_classwise'+str(eps)+

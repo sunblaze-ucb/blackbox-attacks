@@ -192,7 +192,7 @@ if __name__ == "__main__":
                         help="FGS attack scale")
     parser.add_argument("--alpha", type=float, default=0.05,
                         help="RAND+FGSM random perturbation scale")
-    parser.add_argument("--steps", type=int, default=30,
+    parser.add_argument("--steps", type=int, default=40,
                         help="Iterated FGS steps")
     parser.add_argument("--kappa", type=float, default=100,
                         help="CW attack confidence")

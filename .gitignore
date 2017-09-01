@@ -1,3 +1,4 @@
+W
 *.pyc
 *.out
 resnet/logs_*/
@@ -15,3 +16,4 @@ latex_plots/*
 .ipynb_checkpoints/
 cifar10_attacks/images/
 cifar10_attacks/logs/
+cifar10-ensadv/
