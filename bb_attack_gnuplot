@@ -140,7 +140,7 @@ plot 'cifar10_attacks/output_data/baseline_linf_md_rand_0.0_thin_32.txt' u 1:3 w
 'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_pca_400.txt' u 2:3 with lp ls 28 title '\footnotesize{QR (PCA-400, logit)}', \
 'plots-points/wide-fgsm-to-thin.txt' u 1:($2*100) with lp ls 6 title '\footnotesize{28-10 (FGS, xent)}',\
 'cifar10_attacks/output_data/wb_un_cw_linf_thin_32.txt' u 2:3 with lp ls 9 title '\footnotesize{wb FGSM (logit)}', \
-'cifar10_attacks/output_data/wb_un_xent_linf_thin_32.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}',
+'cifar10_attacks/output_data/wb_un_xent_linf_thin_32.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}'
 
 unset output
 
@@ -163,7 +163,9 @@ plot 'cifar10_attacks/output_data/baseline_linf_md_rand_0.0_thin_32_adv.txt' u 1
 'cifar10_attacks/output_data/query_based_un_cw_linf_thin_32_adv.txt' u 2:3 with lp ls 4 title '\footnotesize{FD (logit)}', \
 'plots-points/wide-fgsm-to-thin_adv.txt' u 1:($2*100) with lp ls 6 title '\footnotesize{28-10 (FGS, xent)}',\
 'cifar10_attacks/output_data/wb_un_cw_linf_thin_32_adv.txt' u 1:2 with lp ls 9 title '\footnotesize{wb FGSM (logit)}', \
-'cifar10_attacks/output_data/wb_un_xent_linf_thin_32_adv.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}',
+'cifar10_attacks/output_data/wb_un_xent_linf_thin_32_adv.txt' u 1:2 with lp ls 10 title '\footnotesize{wb FGSM (xent)}'
+
+unset output
 
 
 set output "latex_plots/random_group_linf_Model_A.tex"
@@ -225,6 +227,7 @@ plot 'output_data/untargeted/query_based_un_cw_linf_modelA_adv0.05_rand.txt' u 2
 'output_data/untargeted/wb_un_cw_linf_modelA_ens_0.3_linf_ACD0.05_rand.txt' u 1:2 with lp ls 4 title '\footnotesize{ens, FGSM}', \
 'output_data/untargeted/query_based_un_cw_linf_modelA_adv_0.3_linf_iter0.05_rand.txt' u 2:3 with lp ls 5 title '\footnotesize{iter, FD}', \
 'output_data/untargeted/wb_un_cw_linf_modelA_adv_0.3_linf_iter0.05_rand.txt' u 1:2 with lp ls 10 title '\footnotesize{iter, FGSM}'
+
 unset output
 
 set output "latex_plots/pca_group_linf_Resnet_32.tex"
