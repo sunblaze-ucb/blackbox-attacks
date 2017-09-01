@@ -169,6 +169,7 @@ plot 'cifar10_attacks/output_data/baseline_linf_md_rand_0.0_thin_32_adv.txt' u 1
 'cifar10_attacks/output_data/wb_un_xent_linf_thin_32_adv.txt' u 1:2 with lp ls 10 title '\small{wb FGSM (xent)}',
 
 
+set terminal epslatex size 7.2cm, 6cm
 set output "latex_plots/random_group_linf_Model_A.tex"
 
 set xlabel '$\epsilon$' offset 0, 0.5
@@ -210,6 +211,7 @@ plot 'output_data/untargeted/query_based_un_cw_linf_modelA.txt' u 2:3 with lp ls
 
 unset output
 
+set terminal epslatex size 12cm, 6cm
 set output "latex_plots/FD_FGSM_rand_linf_Model_A_def.tex"
 
 set xlabel '$\epsilon$' offset 0, 0.5
@@ -230,6 +232,7 @@ plot 'output_data/untargeted/query_based_un_cw_linf_modelA_adv0.05_rand.txt' u 2
 'output_data/untargeted/wb_un_cw_linf_modelA_adv_0.3_linf_iter0.05_rand.txt' u 1:2 with lp ls 10 title '\small{iter, FGSM}'
 unset output
 
+set terminal epslatex size 7.2cm, 6cm
 set output "latex_plots/pca_group_linf_Resnet_32.tex"
 
 set xlabel '$\epsilon$' offset 0, 0.5
