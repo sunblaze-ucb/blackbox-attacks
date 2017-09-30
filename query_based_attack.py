@@ -1,15 +1,18 @@
 import numpy as np
 import tensorflow as tf
 import keras.backend as K
-import cPickle as pickle
 import os
 from mnist import data_mnist, set_mnist_flags, load_model
 from tf_utils import tf_test_error_rate, batch_eval
 from keras.utils import np_utils
 from attack_utils import gen_grad
 from matplotlib import image as img
+
 import time
 from os.path import basename
+# from functools import partial
+# import multiprocessing
+# from multiprocessing import Process, Manager
 
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
@@ -19,7 +22,7 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 RANDOM = True
-BATCH_SIZE = 1
+BATCH_SIZE = 100
 BATCH_EVAL_NUM = 1
 CLIP_MIN = 0
 CLIP_MAX = 1
@@ -136,17 +139,20 @@ def xent_est(prediction, x, x_plus_i, x_minus_i, curr_target):
 def CW_est(logits, x, x_plus_i, x_minus_i, curr_sample, curr_target):
     curr_logits = K.get_session().run([logits], feed_dict={x: curr_sample,
                                                     K.learning_phase(): 0})[0]
+    # curr_logits = np.log(curr_logits)
     # So that when max is taken, it returns max among classes apart from the
     # target
     curr_logits[np.arange(BATCH_SIZE), list(curr_target)] = -1e4
     max_indices = np.argmax(curr_logits, 1)
     logit_plus = K.get_session().run([logits], feed_dict={x: x_plus_i,
                                                 K.learning_phase(): 0})[0]
+    # logit_plus = np.log(logit_plus)
     logit_plus_t = logit_plus[np.arange(BATCH_SIZE), list(curr_target)]
     logit_plus_max = logit_plus[np.arange(BATCH_SIZE), list(max_indices)]
 
     logit_minus = K.get_session().run([logits], feed_dict={x: x_minus_i,
                                                 K.learning_phase(): 0})[0]
+    # logit_minus = np.log(logit_minus)
     logit_minus_t = logit_minus[np.arange(BATCH_SIZE), list(curr_target)]
     logit_minus_max = logit_minus[np.arange(BATCH_SIZE), list(max_indices)]
 
@@ -155,16 +161,81 @@ def CW_est(logits, x, x_plus_i, x_minus_i, curr_sample, curr_target):
 
     return logit_t_grad_est/2.0, logit_max_grad_est/2.0
 
+# #######
+# def overall_grad_est(j, logits, prediction, x, curr_sample, curr_target, 
+#                         p_t, U=None):
+#     basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+
+#     if PCA_FLAG == False:
+#         if j != num_groups-1:
+#             curr_indices = random_indices[j*args.group_size:(j+1)*args.group_size]
+#         elif j == num_groups-1:
+#             curr_indices = random_indices[j*args.group_size:]
+#         row = curr_indices/FLAGS.IMAGE_COLS
+#         col = curr_indices % FLAGS.IMAGE_COLS
+#         for i in range(len(curr_indices)):
+#             basis_vec[:, row[i], col[i]] = 1.
+
+#     elif PCA_FLAG == True:
+#         basis_vec[:] = U[:,j].reshape((1, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+#         # basis_vec = np.sign(basis_vec)
+
+#     x_plus_i = np.clip(curr_sample + args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
+#     x_minus_i = np.clip(curr_sample - args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
+
+#     if args.loss_type == 'cw':
+#         logit_t_grad_est, logit_max_grad_est = CW_est(logits, x, x_plus_i,
+#                                         x_minus_i, curr_sample, curr_target)
+#         if '_un' in args.method:
+#             single_grad_est = logit_t_grad_est - logit_max_grad_est
+#         else:
+#             single_grad_est = logit_max_grad_est - logit_t_grad_est
+#     elif args.loss_type == 'xent':
+#         single_grad_est = xent_est(prediction, x, x_plus_i, x_minus_i, curr_target)
+# ############
+
+
 
 def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim, U=None):
-    grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+    grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS,
+                         FLAGS.NUM_CHANNELS))
     logits_np = K.get_session().run([logits], feed_dict={x: curr_sample,
                                                     K.learning_phase(): 0})[0]
+
+####### TODO: parallelize 
+    # grad_est = manager.Array('f',np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS,
+                         # FLAGS.NUM_CHANNELS)))
+    # logits_np = np.log(logits_np)
+
+    # j_list = range(num_groups)
+
+    # partial_overall_grad_est = partial(overall_grad_est, logits=logits,
+    #     prediction=prediction, x=x, curr_sample=curr_sample, 
+    #     curr_target=curr_target, p_t=p_t, U=U)
+
+    # # p = Process(target=partial_overall_grad_est, args=(grad_est, j_list))
+
+    # # p.start()
+    # # p.join()
+    
+    # pool=multiprocessing.Pool(processes=8)
+    # all_grads = pool.map(partial_overall_grad_est, j_list, 1)
+    # # pool.close()
+    # pool.join()
+
+    # if PCA_FLAG == False:
+    #     for i in range(len(curr_indices)):
+    #         grad_est[:, row[i], col[i]] = single_grad_est.reshape((BATCH_SIZE,1))
+    # elif PCA_FLAG == True:
+    #     grad_est += basis_vec*single_grad_est[:,None,None,None]
+##### Parallelize attempt end
+
     if PCA_FLAG == False:
         random_indices = np.random.permutation(dim)
         num_groups = dim / args.group_size
     elif PCA_FLAG == True:
         num_groups = args.num_comp
+
     for j in range(num_groups):
         basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
 
@@ -591,7 +662,7 @@ def main(target_model_name, target=None):
             white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim, args.beta)
             estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logits, eps, dim, args.beta)
         else:
-            white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim)
+            # white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim)
             estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, eps, dim)
 
 if __name__ == "__main__":
