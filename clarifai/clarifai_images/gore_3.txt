@@ -1,0 +1,25 @@
+eps: 16, num_iter: 5, group_size: 100000, delta: 0.01, model: moderation ---- success: 0.0 
+Original prediction: [  6.36924640e-06   1.24392750e-04   1.13069300e-04   2.55905850e-04
+   9.99869500e-01] 
+Final prediction: [  7.30292200e-06   1.15840936e-04   1.24565540e-04   3.09434570e-04
+   9.99856230e-01]
+eps: 24, num_iter: 5, group_size: 100000, delta: 0.01, model: moderation ---- success: 0.0 
+Original prediction: [  6.36923300e-06   1.24392540e-04   1.13069220e-04   2.55906300e-04
+   9.99869500e-01] 
+Final prediction: [  1.12885360e-05   1.25115340e-04   1.32462680e-04   4.72594460e-04
+   9.99803800e-01]
+eps: 24, num_iter: 5, group_size: 10000, delta: 0.01, model: moderation ---- success: 0.0 
+Original prediction: [  6.36923300e-06   1.24392540e-04   1.13069220e-04   2.55906300e-04
+   9.99869500e-01] 
+Final prediction: [  4.98628180e-05   1.76492820e-04   1.03175946e-04   4.93995030e-04
+   9.99692900e-01]
+eps: 24, num_iter: 5, group_size: 100000, delta: 0.01, model: moderation ---- success: 0.0 
+Original prediction: [  6.36924640e-06   1.24392750e-04   1.13069300e-04   2.55905850e-04
+   9.99869500e-01] 
+Final prediction: [  1.26811260e-05   1.57824320e-04   1.22712210e-04   4.00580380e-04
+   9.99798060e-01]
+eps: 24, num_iter: 5, group_size: 10000, delta: 0.01, model: moderation ---- success: 0.0 
+Original prediction: [  6.36923300e-06   1.24392540e-04   1.13069220e-04   2.55906300e-04
+   9.99869500e-01] 
+Final prediction: [  4.62226740e-05   1.57259480e-04   1.03207730e-04   4.16668200e-04
+   9.99723200e-01]

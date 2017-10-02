@@ -20,13 +20,13 @@ IMAGE_COLS = 32
 NUM_CHANNELS = 3
 
 RANDOM = True
-BATCH_SIZE = 1
-BATCH_EVAL_NUM = 1
+BATCH_SIZE = 100
+BATCH_EVAL_NUM = 100
 CLIP_MIN = 0.0
 CLIP_MAX = 255.0
 # FEATURE_GROUP_SIZE = 7
 # NUM_COMPONENTS = 10
-PCA_FLAG = True
+PCA_FLAG = False
 
 def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
     img_count = 0
@@ -47,7 +47,6 @@ def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
 
 def est_img_save(i, adv_prediction, curr_target, eps, x_adv):
     img_count = 0
-    print('here')
     if i==0:
         for k in range(1):
             adv_label = np.argmax(adv_prediction[k].reshape(1, NUM_CLASSES),1)

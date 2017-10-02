@@ -10,22 +10,27 @@ from matplotlib import image as img
 
 import time
 from os.path import basename
-# from functools import partial
+from functools import partial
 # import multiprocessing
 # from multiprocessing import Process, Manager
+from multiprocessing.dummy import Pool as ThreadPool 
 
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
 
 
 from tensorflow.python.platform import flags
+
+K.set_learning_phase(0)
+
 FLAGS = flags.FLAGS
 
 RANDOM = True
 BATCH_SIZE = 100
-BATCH_EVAL_NUM = 1
+BATCH_EVAL_NUM = 10
 CLIP_MIN = 0
 CLIP_MAX = 1
+PARALLEL_FLAG = True
 # FEATURE_GROUP_SIZE = 7
 # NUM_COMPONENTS = 10
 
@@ -126,32 +131,27 @@ def pca_components(X, dim):
 
 
 def xent_est(prediction, x, x_plus_i, x_minus_i, curr_target):
-    pred_plus = K.get_session().run([prediction], feed_dict={x: x_plus_i,
-                                                K.learning_phase(): 0})[0]
+    pred_plus = K.get_session().run([prediction], feed_dict={x: x_plus_i})[0]
     pred_plus_t = pred_plus[np.arange(BATCH_SIZE), list(curr_target)]
-    pred_minus = K.get_session().run([prediction], feed_dict={x: x_minus_i,
-                                                K.learning_phase(): 0})[0]
+    pred_minus = K.get_session().run([prediction], feed_dict={x: x_minus_i})[0]
     pred_minus_t = pred_minus[np.arange(BATCH_SIZE), list(curr_target)]
     single_grad_est = (pred_plus_t - pred_minus_t)/args.delta
 
     return single_grad_est/2.0
 
 def CW_est(logits, x, x_plus_i, x_minus_i, curr_sample, curr_target):
-    curr_logits = K.get_session().run([logits], feed_dict={x: curr_sample,
-                                                    K.learning_phase(): 0})[0]
+    curr_logits = K.get_session().run([logits], feed_dict={x: curr_sample})[0]
     # curr_logits = np.log(curr_logits)
     # So that when max is taken, it returns max among classes apart from the
     # target
     curr_logits[np.arange(BATCH_SIZE), list(curr_target)] = -1e4
     max_indices = np.argmax(curr_logits, 1)
-    logit_plus = K.get_session().run([logits], feed_dict={x: x_plus_i,
-                                                K.learning_phase(): 0})[0]
+    logit_plus = K.get_session().run([logits], feed_dict={x: x_plus_i})[0]
     # logit_plus = np.log(logit_plus)
     logit_plus_t = logit_plus[np.arange(BATCH_SIZE), list(curr_target)]
     logit_plus_max = logit_plus[np.arange(BATCH_SIZE), list(max_indices)]
 
-    logit_minus = K.get_session().run([logits], feed_dict={x: x_minus_i,
-                                                K.learning_phase(): 0})[0]
+    logit_minus = K.get_session().run([logits], feed_dict={x: x_minus_i})[0]
     # logit_minus = np.log(logit_minus)
     logit_minus_t = logit_minus[np.arange(BATCH_SIZE), list(curr_target)]
     logit_minus_max = logit_minus[np.arange(BATCH_SIZE), list(max_indices)]
@@ -161,115 +161,143 @@ def CW_est(logits, x, x_plus_i, x_minus_i, curr_sample, curr_target):
 
     return logit_t_grad_est/2.0, logit_max_grad_est/2.0
 
-# #######
-# def overall_grad_est(j, logits, prediction, x, curr_sample, curr_target, 
-#                         p_t, U=None):
-#     basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+#######
+def overall_grad_est(j, logits, prediction, x, curr_sample, curr_target, 
+                        p_t, random_indices, num_groups, U=None):
+    basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
 
-#     if PCA_FLAG == False:
-#         if j != num_groups-1:
-#             curr_indices = random_indices[j*args.group_size:(j+1)*args.group_size]
-#         elif j == num_groups-1:
-#             curr_indices = random_indices[j*args.group_size:]
-#         row = curr_indices/FLAGS.IMAGE_COLS
-#         col = curr_indices % FLAGS.IMAGE_COLS
-#         for i in range(len(curr_indices)):
-#             basis_vec[:, row[i], col[i]] = 1.
+    if PCA_FLAG == False:
+        if j != num_groups-1:
+            curr_indices = random_indices[j*args.group_size:(j+1)*args.group_size]
+        elif j == num_groups-1:
+            curr_indices = random_indices[j*args.group_size:]
+        row = curr_indices/FLAGS.IMAGE_COLS
+        col = curr_indices % FLAGS.IMAGE_COLS
+        for i in range(len(curr_indices)):
+            basis_vec[:, row[i], col[i]] = 1.
 
-#     elif PCA_FLAG == True:
-#         basis_vec[:] = U[:,j].reshape((1, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
-#         # basis_vec = np.sign(basis_vec)
+    elif PCA_FLAG == True:
+        basis_vec[:] = U[:,j].reshape((1, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+        # basis_vec = np.sign(basis_vec)
 
-#     x_plus_i = np.clip(curr_sample + args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
-#     x_minus_i = np.clip(curr_sample - args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
+    x_plus_i = np.clip(curr_sample + args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
+    x_minus_i = np.clip(curr_sample - args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
 
-#     if args.loss_type == 'cw':
-#         logit_t_grad_est, logit_max_grad_est = CW_est(logits, x, x_plus_i,
-#                                         x_minus_i, curr_sample, curr_target)
-#         if '_un' in args.method:
-#             single_grad_est = logit_t_grad_est - logit_max_grad_est
-#         else:
-#             single_grad_est = logit_max_grad_est - logit_t_grad_est
-#     elif args.loss_type == 'xent':
-#         single_grad_est = xent_est(prediction, x, x_plus_i, x_minus_i, curr_target)
-# ############
+    if args.loss_type == 'cw':
+        logit_t_grad_est, logit_max_grad_est = CW_est(logits, x, x_plus_i,
+                                        x_minus_i, curr_sample, curr_target)
+        if '_un' in args.method:
+            single_grad_est = logit_t_grad_est - logit_max_grad_est
+        else:
+            single_grad_est = logit_max_grad_est - logit_t_grad_est
+    elif args.loss_type == 'xent':
+        single_grad_est = xent_est(prediction, x, x_plus_i, x_minus_i, curr_target)
+
+    return single_grad_est
+############
 
 
 
 def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim, U=None):
     grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS,
                          FLAGS.NUM_CHANNELS))
-    logits_np = K.get_session().run([logits], feed_dict={x: curr_sample,
-                                                    K.learning_phase(): 0})[0]
-
-####### TODO: parallelize 
-    # grad_est = manager.Array('f',np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS,
-                         # FLAGS.NUM_CHANNELS)))
-    # logits_np = np.log(logits_np)
-
-    # j_list = range(num_groups)
-
-    # partial_overall_grad_est = partial(overall_grad_est, logits=logits,
-    #     prediction=prediction, x=x, curr_sample=curr_sample, 
-    #     curr_target=curr_target, p_t=p_t, U=U)
-
-    # # p = Process(target=partial_overall_grad_est, args=(grad_est, j_list))
-
-    # # p.start()
-    # # p.join()
-    
-    # pool=multiprocessing.Pool(processes=8)
-    # all_grads = pool.map(partial_overall_grad_est, j_list, 1)
-    # # pool.close()
-    # pool.join()
-
-    # if PCA_FLAG == False:
-    #     for i in range(len(curr_indices)):
-    #         grad_est[:, row[i], col[i]] = single_grad_est.reshape((BATCH_SIZE,1))
-    # elif PCA_FLAG == True:
-    #     grad_est += basis_vec*single_grad_est[:,None,None,None]
-##### Parallelize attempt end
-
+    logits_np = K.get_session().run([logits], feed_dict={x: curr_sample})[0]
     if PCA_FLAG == False:
         random_indices = np.random.permutation(dim)
         num_groups = dim / args.group_size
     elif PCA_FLAG == True:
         num_groups = args.num_comp
 
-    for j in range(num_groups):
-        basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+    if PARALLEL_FLAG == True:
+    ####### TODO: parallelize 
+        # grad_est = manager.Array('f',np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS,
+                             # FLAGS.NUM_CHANNELS)))
+        # logits_np = np.log(logits_np)
 
-        if PCA_FLAG == False:
-            if j != num_groups-1:
-                curr_indices = random_indices[j*args.group_size:(j+1)*args.group_size]
-            elif j == num_groups-1:
-                curr_indices = random_indices[j*args.group_size:]
-            row = curr_indices/FLAGS.IMAGE_COLS
-            col = curr_indices % FLAGS.IMAGE_COLS
+        j_list = range(num_groups)
+
+        #Creating partial function with single argument
+        partial_overall_grad_est = partial(overall_grad_est, logits=logits,
+            prediction=prediction, x=x, curr_sample=curr_sample, 
+            curr_target=curr_target, p_t=p_t, random_indices=random_indices, num_groups=num_groups, U=U)
+
+        #Creating pool of threads 
+        pool = ThreadPool(3)
+        all_grads = pool.map(partial_overall_grad_est, j_list)
+
+        print(len(all_grads))
+
+        pool.close() 
+        pool.join()
+
+        for j in j_list:
+            # all_grads.append(partial_overall_grad_est(j))
+            if PCA_FLAG == False:
+                if j != num_groups-1:
+                    curr_indices = random_indices[j*args.group_size:(j+1)*args.group_size]
+                elif j == num_groups-1:
+                    curr_indices = random_indices[j*args.group_size:]
+                row = curr_indices/FLAGS.IMAGE_COLS
+                col = curr_indices % FLAGS.IMAGE_COLS
             for i in range(len(curr_indices)):
-                basis_vec[:, row[i], col[i]] = 1.
+                grad_est[:, row[i], col[i]] = all_grads[j].reshape((BATCH_SIZE,1))
 
-        elif PCA_FLAG == True:
-            basis_vec[:] = U[:,j].reshape((1, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
-            # basis_vec = np.sign(basis_vec)
+        # print(all_grads)
 
-        x_plus_i = np.clip(curr_sample + args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
-        x_minus_i = np.clip(curr_sample - args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
 
-        if args.loss_type == 'cw':
-            logit_t_grad_est, logit_max_grad_est = CW_est(logits, x, x_plus_i,
-                                            x_minus_i, curr_sample, curr_target)
-            if '_un' in args.method:
-                single_grad_est = logit_t_grad_est - logit_max_grad_est
-            else:
-                single_grad_est = logit_max_grad_est - logit_t_grad_est
-        elif args.loss_type == 'xent':
-            single_grad_est = xent_est(prediction, x, x_plus_i, x_minus_i, curr_target)
-        if PCA_FLAG == False:
-            for i in range(len(curr_indices)):
-                grad_est[:, row[i], col[i]] = single_grad_est.reshape((BATCH_SIZE,1))
-        elif PCA_FLAG == True:
-            grad_est += basis_vec*single_grad_est[:,None,None,None]
+
+        # # p = Process(target=partial_overall_grad_est, args=(grad_est, j_list))
+
+        # # p.start()
+        # # p.join()
+        
+        # pool=multiprocessing.Pool(processes=8)
+        # all_grads = pool.map(partial_overall_grad_est, j_list, 1)
+        # # pool.close()
+        # pool.join()
+
+        # if PCA_FLAG == False:
+        #     for i in range(len(curr_indices)):
+        #         grad_est[:, row[i], col[i]] = single_grad_est.reshape((BATCH_SIZE,1))
+        # elif PCA_FLAG == True:
+        #     grad_est += basis_vec*single_grad_est[:,None,None,None]
+    ##### Parallelize attempt end
+
+    else:
+        for j in range(num_groups):
+            basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+
+            if PCA_FLAG == False:
+                if j != num_groups-1:
+                    curr_indices = random_indices[j*args.group_size:(j+1)*args.group_size]
+                elif j == num_groups-1:
+                    curr_indices = random_indices[j*args.group_size:]
+                row = curr_indices/FLAGS.IMAGE_COLS
+                col = curr_indices % FLAGS.IMAGE_COLS
+                for i in range(len(curr_indices)):
+                    basis_vec[:, row[i], col[i]] = 1.
+
+            elif PCA_FLAG == True:
+                basis_vec[:] = U[:,j].reshape((1, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+                # basis_vec = np.sign(basis_vec)
+
+            x_plus_i = np.clip(curr_sample + args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
+            x_minus_i = np.clip(curr_sample - args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
+
+            if args.loss_type == 'cw':
+                logit_t_grad_est, logit_max_grad_est = CW_est(logits, x, x_plus_i,
+                                                x_minus_i, curr_sample, curr_target)
+                if '_un' in args.method:
+                    single_grad_est = logit_t_grad_est - logit_max_grad_est
+                else:
+                    single_grad_est = logit_max_grad_est - logit_t_grad_est
+            elif args.loss_type == 'xent':
+                single_grad_est = xent_est(prediction, x, x_plus_i, x_minus_i, curr_target)
+            if PCA_FLAG == False:
+                for i in range(len(curr_indices)):
+                    grad_est[:, row[i], col[i]] = single_grad_est.reshape((BATCH_SIZE,1))
+            elif PCA_FLAG == True:
+                grad_est += basis_vec*single_grad_est[:,None,None,None]
 
     # if PCA_FLAG == True:
     #     grad_est /= num_groups
@@ -332,7 +360,7 @@ def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, ep
 
         curr_target = targets[i*BATCH_SIZE:(i+1)*BATCH_SIZE]
 
-        curr_prediction = K.get_session().run([prediction], feed_dict={x: curr_sample, K.learning_phase(): 0})[0]
+        curr_prediction = K.get_session().run([prediction], feed_dict={x: curr_sample})[0]
 
         p_t = curr_prediction[np.arange(BATCH_SIZE), list(curr_target)]
 
@@ -367,7 +395,7 @@ def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, ep
         perturb_norm_batch = np.mean(perturb_norm)
         avg_l2_perturb += perturb_norm_batch
 
-        adv_prediction = K.get_session().run([prediction], feed_dict={x: x_adv, K.learning_phase(): 0})[0]
+        adv_prediction = K.get_session().run([prediction], feed_dict={x: x_adv})[0]
         success += np.sum(np.argmax(adv_prediction,1) == curr_target)
 
         est_img_save(i, adv_prediction, curr_target, eps, x_adv)

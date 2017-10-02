@@ -5,8 +5,29 @@ reuse_variables = None
 def load_model(ckpt_dir, batch_size, input_node, labels_node=None, first_var=0):
     print ckpt_dir
     global reuse_variables
+    if any(x in ckpt_dir for x in ['thin_32_pgd']):
+        import madry_thin_model
+        print('Using Madry thin model')
+        input_scaled = tf.map_fn(lambda image: tf.image.per_image_standardization(image), input_node)
+        m = madry_thin_model.Model('eval', input_scaled, labels_node)
+        # m._build_model()
+        my_vars = tf.global_variables()[first_var:]
+        reuse_variables = True
+        class Net(object):
+            def get_logits(self):
+                return m.pre_softmax
+            def get_loss(self):
+                return m.mean_xent
+            def get_accuracy(self):
+                return m.accuracy
+            def load(self, session):
+                saver = tf.train.Saver(my_vars)
+                ckpt_state = tf.train.get_checkpoint_state(ckpt_dir)
+                saver.restore(session, ckpt_state.model_checkpoint_path)
+        return Net()
     if any(x in ckpt_dir for x in ['thin_32', 'thin_32_adv', 'thin_32_ensadv']):
         import resnet_model_reusable
+        print('using thin model')
         hps = resnet_model_reusable.HParams(
             batch_size=batch_size,
             num_classes=10,
