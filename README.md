@@ -1,4 +1,4 @@
-# Ensemble Adversarial Training
+# Query-based black-box attacks
 
 This repository contains code to reproduce results from the paper:
 
@@ -10,7 +10,7 @@ ArXiv report: https://arxiv.org/abs/1705.07204
 
 ###### REQUIREMENTS
 
-The code was tested with Python 2.7.12, Tensorflow 1.0.1 and Keras 1.2.2.
+The code was tested with Python 2.7.12, Tensorflow 1.3.0 and Keras 1.2.2.
 
 ###### EXPERIMENTS
 

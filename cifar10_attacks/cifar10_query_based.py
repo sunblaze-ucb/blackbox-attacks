@@ -21,7 +21,6 @@ NUM_CHANNELS = 3
 
 RANDOM = True
 BATCH_SIZE = 100
-BATCH_EVAL_NUM = 100
 CLIP_MIN = 0.0
 CLIP_MAX = 255.0
 # FEATURE_GROUP_SIZE = 7
@@ -584,6 +583,11 @@ if '_un' in args.method:
     RANDOM = True
 if args.num_comp != 3072:
     PCA_FLAG=True
+
+if '_iter' in args.method:
+    BATCH_EVAL_NUM = 10
+else:
+    BATCH_EVAL_NUM = 100
 
 # if RANDOM is False:
 #     ofile = open('output_data/'+args.method+'_classwise'+str(eps)+
