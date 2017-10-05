@@ -1,5 +1,0 @@
-Model ~ ~
-\\small{\\textsf{A}}   99.9    96.2
-\\small{\\Rthin}  98.0    82.0
-\\small{\\textsf{A}}\\textsubscript{\\textsf{adv-0.3}}    100.0    74.5
-\\small{\\Rthin}\\textsubscript{\\textsf{adv-8}}    97.0    72.0
