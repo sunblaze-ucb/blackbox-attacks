@@ -2,7 +2,7 @@
 
 ### untargeted attacks
 
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=4
 export TF_CPP_MIN_LOG_LEVEL=2
 
 predict() { # src dst ckpt_dir
@@ -45,18 +45,47 @@ compare2() { # src dst [offset]
 	python compare_preds_2.py preds_$1_$2.npy $3
 }
 
-compare2 thin_fgsm_8 thin
-compare2 thin_fgsm_8 wide
-compare2 thin_fgsm_8 tutorial
+# compare2 thin_fgsm_8 thin
+# compare2 thin_fgsm_8 wide
+# compare2 thin_fgsm_8 tutorial
 
-compare2 thin_fgsmlogit_8 thin
-compare2 thin_fgsmlogit_8 wide
-compare2 thin_fgsmlogit_8 tutorial
+# compare2 thin_fgsmlogit_8 thin
+# compare2 thin_fgsmlogit_8 wide
+# compare2 thin_fgsmlogit_8 tutorial
 
-compare2 thin_itergs_8 thin
-compare2 thin_itergs_8 wide
-compare2 thin_itergs_8 tutorial
+# compare2 thin_itergs_8 thin
+# compare2 thin_itergs_8 wide
+# compare2 thin_itergs_8 tutorial
 
-compare2 thin_itergslogit_8 thin
-compare2 thin_itergslogit_8 wide
-compare2 thin_itergslogit_8 tutorial
+# compare2 thin_itergslogit_8 thin
+# compare2 thin_itergslogit_8 wide
+# compare2 thin_itergslogit_8 tutorial
+
+predict_and_compare2() { # src dst ckpt_dir [offset]
+	predict $1 $2 $3
+	python compare_preds_2.py preds_$1_$2.npy $4
+}
+
+predict_and_compare2 wide_fgsm_8 thin log
+predict_and_compare2 wide_fgsm_8 thin_adv log_adv
+predict_and_compare2 wide_fgsm_8 thin_ensadv log_ensadv
+predict_and_compare2 wide_fgsm_8 wide log_wide
+predict_and_compare2 wide_fgsm_8 tutorial tutorial/train
+
+predict_and_compare2 wide_fgsmlogit_8 thin log
+predict_and_compare2 wide_fgsmlogit_8 thin_adv log_adv
+predict_and_compare2 wide_fgsmlogit_8 thin_ensadv log_ensadv
+predict_and_compare2 wide_fgsmlogit_8 wide log_wide
+predict_and_compare2 wide_fgsmlogit_8 tutorial tutorial/train
+
+predict_and_compare2 wide_itergs_8 thin log
+predict_and_compare2 wide_itergs_8 thin_adv log_adv
+predict_and_compare2 wide_itergs_8 thin_ensadv log_ensadv
+predict_and_compare2 wide_itergs_8 wide log_wide
+predict_and_compare2 wide_itergs_8 tutorial tutorial/train
+
+predict_and_compare2 wide_itergslogit_8 thin log
+predict_and_compare2 wide_itergslogit_8 thin_adv log_adv
+predict_and_compare2 wide_itergslogit_8 thin_ensadv log_ensadv
+predict_and_compare2 wide_itergslogit_8 wide log_wide
+predict_and_compare2 wide_itergslogit_8 tutorial tutorial/train

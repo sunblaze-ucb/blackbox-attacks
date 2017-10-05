@@ -12,11 +12,22 @@ test -e test_random_targets.npy || python generate_test_random_targets.py
 # python generate_test_itergs_targeted.py test_thin_itergs_targeted_8.npy log 8 1 10
 # python generate_test_itergslogit_targeted.py test_thin_itergslogit_targeted_8.npy log 8 1 10
 
+# python generate_test_fgsm_targeted.py test_wide_fgsm_targeted_8.npy log_wide 8
+# python generate_test_fgsmlogit_targeted.py test_wide_fgsmlogit_targeted_8.npy log_wide 8
+# python generate_test_itergs_targeted.py test_wide_itergs_targeted_8.npy log_wide 8 1 10
+# python generate_test_itergslogit_targeted.py test_wide_itergslogit_targeted_8.npy log_wide 8 1 10
+
 # python generate_test_fgsm_targeted.py test_thin_fgsm_targeted_16.npy log 16
 # python generate_test_fgsmlogit_targeted.py test_thin_fgsmlogit_targeted_16.npy log 16
 
 ### untargeted attacks
 
+# test_thin_fgsm_8.npy from previous experiment
 # python generate_test_fgsmlogit.py test_thin_fgsmlogit_8.npy log 8
-python generate_test_itergs.py test_thin_itergs_8.npy log 8 1 10
-python generate_test_itergslogit.py test_thin_itergslogit_8.npy log 8 1 10
+# python generate_test_itergs.py test_thin_itergs_8.npy log 8 1 10
+# python generate_test_itergslogit.py test_thin_itergslogit_8.npy log 8 1 10
+
+# test_wide_fgsm_8.npy from previous experiment
+python generate_test_fgsmlogit.py test_wide_fgsmlogit_8.npy log_wide 8
+python generate_test_itergs.py test_wide_itergs_8.npy log_wide 8 1 10
+python generate_test_itergslogit.py test_wide_itergslogit_8.npy log_wide 8 1 10
