@@ -20,22 +20,26 @@ IMAGE_COLS = 32
 NUM_CHANNELS = 3
 
 RANDOM = True
-BATCH_SIZE = 100
+BATCH_SIZE = 1
 BATCH_EVAL_NUM = 1
-CLIP_MIN = 0
-CLIP_MAX = 255
+CLIP_MIN = 0.0
+CLIP_MAX = 255.0
 # FEATURE_GROUP_SIZE = 7
 # NUM_COMPONENTS = 10
-PCA_FLAG = False
+PCA_FLAG = True
 
 def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
     img_count = 0
-    for k in range(30):
+    for k in range(1):
         adv_label_wb = np.argmax(adv_pred_np[k].reshape(1, NUM_CLASSES),1)
-        if adv_label_wb[0] != targets[k]:
-            img.imsave( 'images/wb/'+args.norm+'/'+args.loss_type+'{}_{}_{}_{}_{}.png'.format(target_model_name,
-                adv_label_wb, targets[k], eps, args.alpha),
-                X_adv_t[k]/255)
+        if '_iter' not in args.method:
+            img.imsave( 'paper_images/wb_'+args.norm+'_'+args.loss_type+'_{}_{}_{}_{}_{}.png'.format(target_model_name,
+                    adv_label_wb, targets[k], eps, args.alpha),
+                    X_adv_t[k]/255)
+        else:
+            img.imsave( 'paper_images/wb_iter_'+args.norm+'_'+args.loss_type+'_{}_{}_{}_{}_{}.png'.format(target_model_name,
+                    adv_label_wb, targets[k], eps, args.alpha),
+                    X_adv_t[k]/255)
             img_count += 1
         if img_count >=10:
             return
@@ -43,15 +47,16 @@ def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
 
 def est_img_save(i, adv_prediction, curr_target, eps, x_adv):
     img_count = 0
+    print('here')
     if i==0:
-        for k in range(30):
+        for k in range(1):
             adv_label = np.argmax(adv_prediction[k].reshape(1, NUM_CLASSES),1)
-            if adv_label[0] != curr_target[k]:
-                img.imsave('images/'+args.method+'/'+args.norm+'/'+args.loss_type+
+            # if adv_label[0] != curr_target[k]:
+            img.imsave('paper_images/'+args.method+'_'+args.norm+'_'+args.loss_type+
                                 '_{}_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
                                 adv_label, curr_target[k], eps, args.delta, args.alpha,
-                                args.group_size), x_adv[k]/255)
-                img_count += 1
+                                args.num_comp), x_adv[k]/255)
+            img_count += 1
             if img_count >= 10:
                 return
     return
@@ -285,14 +290,14 @@ def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, ep
         perturb_norm_batch = np.mean(perturb_norm)
         avg_l2_perturb += perturb_norm_batch
 
-        # est_img_save(i, adv_prediction, curr_target, eps, x_adv)
         adv_prediction = sess.run(prediction, feed_dict={x: x_adv})
         success += np.sum(np.argmax(adv_prediction,1) == curr_target)
+        est_img_save(i, adv_prediction, curr_target, eps, x_adv)
         
-        img.imsave('images/'+args.method+'/'+args.norm+'/'+args.loss_type+
-                    '_{}_{}_{}_{}_{}_{}.png'.format(target_model_name, 
-                    curr_target[0], eps, args.delta, args.alpha,
-                    args.group_size), x_adv[0]/255)
+        # img.imsave('images/'+args.method+'/'+args.norm+'/'+args.loss_type+
+        #             '_{}_{}_{}_{}_{}_{}.png'.format(target_model_name, 
+        #             curr_target[0], eps, args.delta, args.alpha,
+        #             args.group_size), x_adv[0]/255)
 
     success = 100.0 * float(success)/(BATCH_SIZE*BATCH_EVAL_NUM)
 
@@ -369,6 +374,16 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
         success += np.sum(np.argmax(adv_prediction,1) == curr_target)
 
         # est_img_save(i, adv_prediction, curr_target, eps, x_adv)
+        adv_label = np.argmax(adv_prediction[0].reshape(1, NUM_CLASSES),1)
+        # if adv_label[0] != curr_target[k]:
+        img.imsave('paper_images/'+args.method+'_'+args.norm+'_'+args.loss_type+
+                        '_{}_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
+                            adv_label, curr_target[0], eps, args.delta, args.alpha,
+                            args.num_comp), x_adv[0]/255)
+        # img.imsave('images/'+args.method+'/'+args.norm+'/'+args.loss_type+
+        #         '_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
+        #         curr_target[0], eps, args.delta, args.alpha,
+        #         args.group_size), (x_adv[0]-X_test_mod[0])/255)
 
     success = 100.0 * float(success)/(BATCH_SIZE*BATCH_EVAL_NUM)
 
@@ -393,16 +408,16 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
         grad = gen_grad(x, logits, y)
     elif args.loss_type == 'cw':
         real = tf.reduce_sum(y*logits, 1)
-        other = tf.reduce_max((y)*logits - (y*10000), 1)
+        other = tf.reduce_max((1-y)*logits - (y*10000), 1)
         if '_un' in args.method:
             loss = tf.maximum(0.0,real-other+args.conf)
         else:
             loss = tf.maximum(0.0,other-real+args.conf)
-        grad = K.gradients(loss, [x])[0]
+        grad, = tf.gradients(loss, x)
 
     # normalized gradient
     if args.norm == 'linf':
-        normed_grad = K.sign(grad)
+        normed_grad = tf.sign(grad)
     elif args.norm == 'l2':
         normed_grad = K.l2_normalize(grad, axis = (1,2,3))
 
@@ -412,13 +427,13 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
     # Add perturbation to original example to obtain adversarial example
     if args.loss_type == 'xent':
         if '_un' in args.method:
-            adv_x_t = K.stop_gradient(x + scaled_grad)
+            adv_x_t = tf.stop_gradient(x + scaled_grad)
         else:
-            adv_x_t = K.stop_gradient(x - scaled_grad)
+            adv_x_t = tf.stop_gradient(x - scaled_grad)
     elif args.loss_type == 'cw':
-        adv_x_t = K.stop_gradient(x - scaled_grad)
+        adv_x_t = tf.stop_gradient(x - scaled_grad)
 
-    adv_x_t = K.clip(adv_x_t, CLIP_MIN, CLIP_MAX)
+    adv_x_t = tf.clip_by_value(adv_x_t, CLIP_MIN, CLIP_MAX)
 
     X_test_mod = X_test[random_indices]
     X_test_ini_mod = X_test_ini[random_indices]
@@ -433,14 +448,14 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
     for i in range(BATCH_EVAL_NUM):
         X_test_slice = X_test_mod[i*BATCH_SIZE:(i+1)*BATCH_SIZE]
         targets_cat_slice = targets_cat[i*BATCH_SIZE:(i+1)*BATCH_SIZE]
-        x_adv_i, perturb = sess.run([adv_x_t,scaled_grad], feed_dict={x: X_test_slice, y: targets_cat_slice})
+        x_adv_i = sess.run(adv_x_t, feed_dict={x: X_test_slice, y: targets_cat_slice})
         X_adv_t[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:,:,:] = x_adv_i
         adv_pred_np_i = sess.run(prediction, feed_dict={x: x_adv_i})
         adv_pred_np[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:] = adv_pred_np_i
         pred_np_i = sess.run(prediction, feed_dict={x: X_test_slice})
         pred_np[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:] = pred_np_i
 
-    # wb_img_save(adv_pred_np, targets, eps, X_adv_t)
+    wb_img_save(adv_pred_np, targets, eps, X_adv_t)
 
     # _, _, white_box_error = tf_test_error_rate(logits, x, X_adv_t, targets_cat)
     white_box_success = 100.0 * np.sum(np.argmax(adv_pred_np, 1) == targets)/len(X_test_mod)
@@ -467,11 +482,11 @@ def white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_i
             loss = tf.maximum(0.0,real-other+args.conf)
         else:
             loss = tf.maximum(0.0,other-real+args.conf)
-        grad = K.gradients(loss, [x])[0]
+        grad, = tf.gradients(loss, x)
 
     # normalized gradient
     if args.norm == 'linf':
-        normed_grad = K.sign(grad)
+        normed_grad = tf.sign(grad)
     elif args.norm == 'l2':
         normed_grad = K.l2_normalize(grad, axis = (1,2,3))
 
@@ -481,13 +496,13 @@ def white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_i
     # Add perturbation to original example to obtain adversarial example
     if args.loss_type == 'xent':
         if '_un' in args.method:
-            adv_x_t = K.stop_gradient(x + scaled_grad)
+            adv_x_t = tf.stop_gradient(x + scaled_grad)
         else:
-            adv_x_t = K.stop_gradient(x - scaled_grad)
+            adv_x_t = tf.stop_gradient(x - scaled_grad)
     elif args.loss_type == 'cw':
-        adv_x_t = K.stop_gradient(x - scaled_grad)
+        adv_x_t = tf.stop_gradient(x - scaled_grad)
 
-    adv_x_t = K.clip(adv_x_t, CLIP_MIN, CLIP_MAX)
+    adv_x_t = tf.clip_by_value(adv_x_t, CLIP_MIN, CLIP_MAX)
 
     X_test_mod = X_test[random_indices]
     X_test_ini_mod = X_test_ini[random_indices]
@@ -517,7 +532,10 @@ def white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_i
 
     # adv_pred_np = K.get_session().run([prediction], feed_dict={x: X_adv_t, K.learning_phase(): 0})[0]
 
-    # wb_img_save(adv_pred_np, targets, eps, X_adv_t)
+    wb_img_save(adv_pred_np, targets, eps, X_adv_t)
+    # img.imsave( 'images/wb/'+args.norm+'/'+args.loss_type+'{}_{}_{}_{}_iter.png'.format(target_model_name,
+    # targets[0], eps, args.alpha),
+    # (X_adv_t[0]-X_test_mod[0])/255)
 
     white_box_success = 100.0 * np.sum(np.argmax(adv_pred_np, 1) == targets)/(BATCH_SIZE*BATCH_EVAL_NUM)
     if '_un' in args.method:
@@ -565,6 +583,8 @@ args = parser.parse_args()
 
 if '_un' in args.method:
     RANDOM = True
+if args.num_comp != 3072:
+    PCA_FLAG=True
 
 # if RANDOM is False:
 #     ofile = open('output_data/'+args.method+'_classwise'+str(eps)+
@@ -580,12 +600,12 @@ target_model_name = args.ckpt_dir
 np.random.seed(0)
 tf.set_random_seed(0)
 
-x = tf.placeholder(shape=(None,
+x = tf.placeholder(shape=(BATCH_SIZE,
                    IMAGE_ROWS,
                    IMAGE_COLS,
                    NUM_CHANNELS),dtype=tf.float32)
 
-y = tf.placeholder(shape=(None, NUM_CLASSES),dtype=tf.float32)
+y = tf.placeholder(shape=(BATCH_SIZE, NUM_CLASSES),dtype=tf.float32)
 
 dim = int(IMAGE_ROWS*IMAGE_COLS*NUM_CHANNELS)
 
@@ -593,12 +613,14 @@ X_test_ini = np.load(args.img_source)
 Y_test = np.load(args.label_source)
 print('Loaded data')
 
-Y_test_uncat = np.argmax(Y_test,1)
+# Y_test_uncat = np.argmax(Y_test,1)
 
 random_indices = np.random.choice(len(X_test_ini),BATCH_SIZE*BATCH_EVAL_NUM, replace=False)
+Y_test = Y_test[random_indices]
+Y_test_uncat = np.argmax(Y_test,1)
 
 # target model for crafting adversarial examples
-target_model = models.load_model('logs/'+target_model_name, BATCH_SIZE, x)
+target_model = models.load_model('logs/'+target_model_name, BATCH_SIZE, x, y)
 
 logits = target_model.get_logits()
 prediction = tf.nn.softmax(logits)
@@ -608,7 +630,7 @@ target_model.load(sess)
 print('Creating session')
 
 if '_un' in args.method:
-    targets = np.argmax(Y_test[random_indices], 1)
+    targets = Y_test_uncat
 elif RANDOM is False:
     targets = np.array([target]*(BATCH_SIZE*BATCH_EVAL_NUM))
 elif RANDOM is True:
@@ -619,6 +641,8 @@ elif RANDOM is True:
         targets.append(np.random.choice(allowed_targets))
         allowed_targets = list(range(NUM_CLASSES))
     targets = np.array(targets)
+    # targets_cat=np.load('test_random_targets.npy')
+    # targets = np.argmax(targets_cat, 1)
 targets_cat = np_utils.to_categorical(targets, NUM_CLASSES).astype(np.float32)
 # print(targets)
 

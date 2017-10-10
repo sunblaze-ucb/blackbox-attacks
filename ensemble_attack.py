@@ -10,6 +10,7 @@ from attack_utils import gen_grad, gen_grad_ens
 from tf_utils import tf_test_error_rate, batch_eval
 from os.path import basename
 from time import time
+from keras.utils import np_utils
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
@@ -45,6 +46,7 @@ def main(attack, src_model_names, target_model_name):
     y = K.placeholder((None, FLAGS.NUM_CLASSES))
 
     _, _, X_test, Y_test = data_mnist()
+    Y_test_uncat = np.argmax(Y_test,axis=1)
 
     # source model for crafting adversarial examples
     src_models = [None] * len(src_model_names)
@@ -67,8 +69,23 @@ def main(attack, src_model_names, target_model_name):
         _,_,err = tf_test_error_rate(target_model, x, X_test, Y_test)
         print '{}: {:.1f}'.format(basename(target_model_name), err)
 
-        return
-
+        return        
+    if args.targeted_flag == 1:
+        targets = []
+        allowed_targets = list(range(FLAGS.NUM_CLASSES))
+        for i in range(len(Y_test)):
+            allowed_targets.remove(Y_test_uncat[i])
+            targets.append(np.random.choice(allowed_targets))
+            allowed_targets = list(range(FLAGS.NUM_CLASSES))
+        # targets = np.random.randint(10, size = BATCH_SIZE*BATCH_EVAL_NUM)
+        targets = np.array(targets)
+        print targets
+        targets_cat = np_utils.to_categorical(targets, FLAGS.NUM_CLASSES).astype(np.float32)
+        Y_test = targets_cat
+        pickle_name = 'adv_samples/' + attack + '/' + src_model_name_joint+'_'+'_'+args.loss_type+'_targets.p'
+        pickle.dump(Y_test, open(pickle_name,'wb'))
+    
+    
     # take the random step in the RAND+FGSM
     if attack == "rand_fgs":
         X_test = np.clip(
@@ -85,12 +102,17 @@ def main(attack, src_model_names, target_model_name):
         loss, grad = gen_grad_ens(x, logits, y)
     elif args.loss_type == 'cw':
         grad = gen_grad_cw(x, logits, y)
+    if args.targeted_flag == 1:
+        grad = -1.0 * grad
 
-    ofile = open('output_data/blind_transfer/'+src_model_name_joint+'_to_'+basename(target_model_name)+'_'+args.loss_type+'.txt', 'a')
+    ofile = open('output_data/blind_transfer/'+attack+'_'+src_model_name_joint+'_to_'+basename(target_model_name)+'_'+args.loss_type+'.txt', 'a')
+    if args.targeted_flag==1:
+           ofile =open('output_data/blind_transfer/'+attack+'_'+src_model_name_joint+'_to_'+basename(target_model_name)+'_'+args.loss_type+'_t.txt', 'a') 
 
     if args.norm == 'linf':
-        eps_list = list(np.linspace(0.025, 0.1, 4))
-        eps_list.extend(np.linspace(0.15, 0.5, 8))
+        # eps_list = list(np.linspace(0.025, 0.1, 4))
+        # eps_list.extend(np.linspace(0.15, 0.5, 8))
+        eps_list = [0.3]
         if attack == "ifgs":
             eps_list = [0.3]
     elif args.norm == 'l2':
@@ -109,22 +131,9 @@ def main(attack, src_model_names, target_model_name):
 
         # iterative FGSM
         if attack == "ifgs":
-            pickle_name = 'adv_samples/' + attack + '/' + src_model_name_joint+'_'+'_'+args.loss_type+'_'+str(eps)+'_adv.p'
-            if os.path.exists(pickle_name):
-                X_adv = pickle.load(open(pickle_name,'rb'))
-                avg_l2_perturb = np.mean(np.linalg.norm((X_adv-X_test).reshape(len(X_test),dim),axis=1))
-                l = len(X_adv)
-
-                for (name, src_model) in zip(src_model_names, src_models):
-                    preds_adv, orig, err = tf_test_error_rate(src_model, x, X_adv, Y_test[0:l])
-                    print '{}->{}: {:.1f}'.format(basename(name), basename(name), err)
-
-                # black-box attack
-                preds, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
-                print '{}->{}: {:.1f}, {}, {} {}'.format(src_model_name_joint, basename(target_model_name), err, avg_l2_perturb, eps, attack)
-                ofile.write('{} {:.2f} {} \n'.format(eps, err, avg_l2_perturb))
-                return
-
+            l=1000
+            X_test = X_test[0:l]
+            Y_test = Y_test[0:l]
 
             adv_x = x
             # iteratively apply the FGSM with small step size
@@ -138,6 +147,8 @@ def main(attack, src_model_names, target_model_name):
                     loss, grad = gen_grad_ens(adv_x, adv_logits, y)
                 elif args.loss_type == 'cw':
                     grad = gen_grad_cw(adv_x, adv_logits, y)
+                if args.targeted_flag == 1:
+                    grad = -1.0 * grad
 
                 adv_x = symbolic_fgs(adv_x, grad, args.delta, True)
                 r = adv_x - x
@@ -200,6 +211,8 @@ def main(attack, src_model_names, target_model_name):
         avg_l2_perturb = np.mean(np.linalg.norm((X_adv-X_test).reshape(len(X_test),dim),axis=1))
 
         pickle_name = 'adv_samples/' + attack + '/' + src_model_name_joint+'_'+'_'+args.loss_type+'_'+str(eps)+'_adv.p'
+        if args.targeted_flag == 1:
+            pickle_name = 'adv_samples/' + attack + '/' + src_model_name_joint+'_'+'_'+args.loss_type+'_'+str(eps)+'_adv_t.p'
         pickle.dump(X_adv, open(pickle_name,'wb'))
 
         # white-box attack
@@ -207,10 +220,14 @@ def main(attack, src_model_names, target_model_name):
 
         for (name, src_model) in zip(src_model_names, src_models):
             preds_adv, orig, err = tf_test_error_rate(src_model, x, X_adv, Y_test[0:l])
+            if args.targeted_flag==1:
+                err = 100.0 - err
             print '{}->{}: {:.1f}'.format(basename(name), basename(name), err)
 
         # black-box attack
         preds, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
+        if args.targeted_flag==1:
+            err = 100.0 - err
         print '{}->{}: {:.1f}, {}, {} {}'.format(src_model_name_joint, basename(target_model_name), err, avg_l2_perturb, eps, attack)
         ofile.write('{} {:.2f} {} \n'.format(eps, err, avg_l2_perturb))
     ofile.close()
@@ -238,6 +255,8 @@ if __name__ == "__main__":
                         help="CW attack confidence")
     parser.add_argument("--norm", type=str, default='linf',
                         help="Norm to use for attack")
+    parser.add_argument("--targeted_flag", type=int, default=0,
+                        help="Carry out targeted attack")
 
     args = parser.parse_args()
     main(args.attack, args.src_models, args.target_model)

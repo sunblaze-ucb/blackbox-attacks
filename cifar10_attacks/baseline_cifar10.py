@@ -113,9 +113,9 @@ def main(target_model_name):
     print('Loaded data')
 
 
-    i = 6711
-    img.imsave( 'images/cifar10_{}.png'.format(i),
-                X_test[i]/255)
+    # i = 6711
+    # img.imsave( 'images/cifar10_{}.png'.format(i),
+    #             X_test[i]/255)
 
     Y_test_uncat = np.argmax(Y_test,1)
     Y_test_uncat_batches = Y_test_uncat.reshape((-1, BATCH_SIZE_G))
@@ -150,7 +150,10 @@ def main(target_model_name):
         # eps_list = [6.0]
     print eps_list
 
-    ofile = open('output_data/baseline_'+args.norm+'_md_rand_'+str(args.alpha)+'_'+str(target_model_name)+'.txt', 'a')
+    if args.targeted_flag == 0:
+        ofile = open('output_data/baseline_'+args.norm+'_md_rand_'+str(args.alpha)+'_'+str(target_model_name)+'.txt', 'a')
+    elif args.targeted_flag == 1:
+        ofile = open('output_data/baseline_target_'+args.norm+'_md_rand_'+str(args.alpha)+'_'+str(target_model_name)+'.txt', 'a')
 
     for eps in eps_list:
         eps_orig = eps
@@ -168,6 +171,9 @@ def main(target_model_name):
             X_test_ini = X_test[curr_indices]
             Y_test_curr = Y_test_uncat[curr_indices]
             curr_len = len(X_test_ini)
+            if args.targeted_flag == 1:
+                allowed_targets = list(range(NUM_CLASSES))
+                allowed_targets.remove(i)
 
             random_perturb = np.random.randn(*X_test_ini.shape)
 
@@ -178,16 +184,27 @@ def main(target_model_name):
                 random_perturb_unit = random_perturb/np.linalg.norm(random_perturb.reshape(curr_len,dim), axis=1)[:, None, None, None]
                 X_test_curr = np.clip(X_test_ini + alpha * random_perturb_unit, CLIP_MIN, CLIP_MAX)
 
-            closest_class = int(closest_means[i])
+            if args.targeted_flag == 0:
+                closest_class = int(closest_means[i])
+                mean_diff_vec = means[closest_class] - means[i]
+            elif args.targeted_flag == 1:
+                targets = []
+                mean_diff_array = np.zeros((curr_len, IMAGE_ROWS, IMAGE_COLS, NUM_CHANNELS))
+                for j in range(curr_len):
+                    target = np.random.choice(allowed_targets)
+                    targets.append(target)
+                    mean_diff_array[j] = means[target] - means[i]
 
-            mean_diff_vec = means[closest_class] - means[i]
-
-            img.imsave( 'images/cifar10_mean_{}.png'.format(i),
-                        means[i]/255)
+            # img.imsave( 'images/cifar10_mean_{}.png'.format(i),
+                        # means[i]/255)
 
             if args.norm == 'linf':
-                mean_diff_vec_signed = np.sign(mean_diff_vec)
-                perturb = eps  * mean_diff_vec_signed
+                if args.targeted_flag == 0:
+                    mean_diff_vec_signed = np.sign(mean_diff_vec)
+                    perturb = eps  * mean_diff_vec_signed
+                elif args.targeted_flag == 1:
+                    mean_diff_array_signed = np.sign(mean_diff_array)
+                    perturb = eps  * mean_diff_array_signed
             elif args.norm == 'l2':
                 mean_diff_vec_unit = mean_diff_vec/np.linalg.norm(mean_diff_vec.reshape(dim))
                 perturb = eps * mean_diff_vec_unit
@@ -201,13 +218,17 @@ def main(target_model_name):
 
             predictions_adv = sess.run(prediction, feed_dict={x: X_adv})
 
-            adv_success += np.sum(np.argmax(predictions_adv, 1) != Y_test_curr)
+            if args.targeted_flag == 0:
+                adv_success += np.sum(np.argmax(predictions_adv, 1) != Y_test_curr)
+            elif args.targeted_flag == 1:
+                print(targets)
+                adv_success += np.sum(np.argmax(predictions_adv, 1) == np.array(targets))
 
-            for k in range(1):
-                adv_label = np.argmax(predictions_adv[k].reshape(1, NUM_CLASSES),1)
-                img.imsave( 'images/baseline/'+args.norm+'/md_{}_{}_{}_{}_{}_{}.png'.format(
-                        i, k, adv_label, closest_class, eps, alpha),
-                        X_adv[k]/255)
+            # for k in range(1):
+            #     adv_label = np.argmax(predictions_adv[k].reshape(1, NUM_CLASSES),1)
+            #     img.imsave( 'images/baseline/'+args.norm+'/md_{}_{}_{}_{}_{}_{}.png'.format(
+            #             i, k, adv_label, closest_class, eps, alpha),
+            #             X_adv[k]/255)
         err = 100.0 * adv_success/ len(X_test)
         avg_l2_perturb = avg_l2_perturb/NUM_CLASSES
 
@@ -229,6 +250,8 @@ if __name__ == "__main__":
                             help="Norm constraint to use")
     parser.add_argument("--alpha", type=float, default=0.0,
                             help="Amount of randomness")
+    parser.add_argument("--targeted_flag", type=int, default=0,
+                            help="Carry out targeted attack")
 
     args = parser.parse_args()
 
