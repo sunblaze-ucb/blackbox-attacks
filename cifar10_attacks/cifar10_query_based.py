@@ -409,7 +409,6 @@ def white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_i
 
     X_test_mod = X_test[random_indices]
     X_test_ini_mod = X_test_ini[random_indices]
-    # targets_cat_mod = targets_cat[random_indices]
 
     X_adv_t = np.zeros_like(X_test_ini_mod)
     adv_pred_np = np.zeros((len(X_test_ini_mod), NUM_CLASSES))
@@ -431,14 +430,6 @@ def white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_i
         adv_pred_np[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:] = adv_pred_np_i
         pred_np_i, logits_np_i = sess.run([prediction, logits], feed_dict={x: X_test_slice})
         pred_np[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:] = pred_np_i
-
-
-    # adv_pred_np = K.get_session().run([prediction], feed_dict={x: X_adv_t, K.learning_phase(): 0})[0]
-
-    wb_img_save(adv_pred_np, targets, eps, X_adv_t)
-    # img.imsave( 'images/wb/'+args.norm+'/'+args.loss_type+'{}_{}_{}_{}_iter.png'.format(target_model_name,
-    # targets[0], eps, args.alpha),
-    # (X_adv_t[0]-X_test_mod[0])/255)
 
     white_box_success = 100.0 * np.sum(np.argmax(adv_pred_np, 1) == targets)/(BATCH_SIZE*BATCH_EVAL_NUM)
     if '_un' in args.method:
@@ -492,16 +483,7 @@ if args.num_comp != 3072:
 if '_iter' in args.method:
     BATCH_EVAL_NUM = 10
 else:
-    BATCH_EVAL_NUM = 100
-
-# if RANDOM is False:
-#     ofile = open('output_data/'+args.method+'_classwise'+str(eps)+
-#                     '_'+str(target_model_name)+'.txt', 'a')
-#     ofile.write('{} \n'.format(args.delta))
-#     for i in range(NUM_CLASSES):
-#         main(args.target_model, i)
-# elif RANDOM is True:
-#     main(args.ckpt_dir)
+    BATCH_EVAL_NUM = 1
 
 target_model_name = args.ckpt_dir
 
@@ -520,8 +502,6 @@ dim = int(IMAGE_ROWS*IMAGE_COLS*NUM_CHANNELS)
 X_test_ini = np.load(args.img_source)
 Y_test = np.load(args.label_source)
 print('Loaded data')
-
-# Y_test_uncat = np.argmax(Y_test,1)
 
 random_indices = np.random.choice(len(X_test_ini),BATCH_SIZE*BATCH_EVAL_NUM, replace=False)
 Y_test = Y_test[random_indices]
@@ -549,10 +529,7 @@ elif RANDOM is True:
         targets.append(np.random.choice(allowed_targets))
         allowed_targets = list(range(NUM_CLASSES))
     targets = np.array(targets)
-    # targets_cat=np.load('test_random_targets.npy')
-    # targets = np.argmax(targets_cat, 1)
 targets_cat = np_utils.to_categorical(targets, NUM_CLASSES).astype(np.float32)
-# print(targets)
 
 if args.norm == 'linf':
     # eps_list = list(np.linspace(4.0, 32.0, 8))
