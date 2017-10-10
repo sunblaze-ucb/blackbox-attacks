@@ -1,7 +1,0 @@
-
-White-box, modelA, 0.3 : 30.0 
-Query based 0.01, modelA, 0.3 : 7.0 
-White-box, modelA, 0.3 : 30.0 
-Query based 0.01, modelA, 0.3 : 7.0 
-White-box, modelA, 0.3 : 36.05 
-Query based 0.1, modelA, 0.3 : 10.84 

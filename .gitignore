@@ -1,4 +1,3 @@
-W
 *.pyc
 *.out
 resnet/logs_*/
@@ -17,3 +16,5 @@ latex_plots/*
 cifar10_attacks/images/
 cifar10_attacks/logs/
 cifar10-ensadv/
+clarifai/clarifai_images/
+models/

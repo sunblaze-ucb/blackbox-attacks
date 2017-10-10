@@ -103,6 +103,7 @@ def main(target_model_name):
                        IMAGE_ROWS,
                        IMAGE_COLS,
                        NUM_CHANNELS),dtype=tf.float32)
+    y = tf.placeholder(tf.int64, shape=None)
 
     dim = int(IMAGE_ROWS*IMAGE_COLS*NUM_CHANNELS)
 
@@ -121,7 +122,7 @@ def main(target_model_name):
     Y_test_uncat_batches = Y_test_uncat.reshape((-1, BATCH_SIZE_G))
 
     # target model for crafting adversarial examples
-    target_model = models.load_model('logs/'+target_model_name, BATCH_SIZE_G, x)
+    target_model = models.load_model('logs/'+target_model_name, BATCH_SIZE_G, x, y)
 
     logits = target_model.get_logits()
     prediction = tf.nn.softmax(logits)
@@ -130,7 +131,14 @@ def main(target_model_name):
     target_model.load(sess)
     print('Creating session')
 
+    # accuracy = target_model.get_accuracy()
+    # accuracy_np = sess.run(accuracy,feed_dict={x: X_test, y: Y_test_uncat})
+    # print(accuracy_np)
+
+    # return
+    
     benign_success = 0.0
+
 
     for i in range(len(X_test_batches)):
         predictions_np = sess.run(prediction, feed_dict={x: X_test_batches[i]})

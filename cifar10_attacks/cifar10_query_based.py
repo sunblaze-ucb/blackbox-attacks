@@ -7,7 +7,6 @@ import models
 from tf_utils import tf_test_error_rate, batch_eval
 from keras.utils import np_utils
 from attack_utils import gen_grad
-from matplotlib import image as img
 import time
 from os.path import basename
 
@@ -20,92 +19,23 @@ IMAGE_COLS = 32
 NUM_CHANNELS = 3
 
 RANDOM = True
-BATCH_SIZE = 1
-BATCH_EVAL_NUM = 1
+BATCH_SIZE = 100
 CLIP_MIN = 0.0
 CLIP_MAX = 255.0
-# FEATURE_GROUP_SIZE = 7
-# NUM_COMPONENTS = 10
-PCA_FLAG = True
-
-def wb_img_save(adv_pred_np, targets, eps, X_adv_t):
-    img_count = 0
-    for k in range(1):
-        adv_label_wb = np.argmax(adv_pred_np[k].reshape(1, NUM_CLASSES),1)
-        if '_iter' not in args.method:
-            img.imsave( 'paper_images/wb_'+args.norm+'_'+args.loss_type+'_{}_{}_{}_{}_{}.png'.format(target_model_name,
-                    adv_label_wb, targets[k], eps, args.alpha),
-                    X_adv_t[k]/255)
-        else:
-            img.imsave( 'paper_images/wb_iter_'+args.norm+'_'+args.loss_type+'_{}_{}_{}_{}_{}.png'.format(target_model_name,
-                    adv_label_wb, targets[k], eps, args.alpha),
-                    X_adv_t[k]/255)
-            img_count += 1
-        if img_count >=10:
-            return
-    return
-
-def est_img_save(i, adv_prediction, curr_target, eps, x_adv):
-    img_count = 0
-    print('here')
-    if i==0:
-        for k in range(1):
-            adv_label = np.argmax(adv_prediction[k].reshape(1, NUM_CLASSES),1)
-            # if adv_label[0] != curr_target[k]:
-            img.imsave('paper_images/'+args.method+'_'+args.norm+'_'+args.loss_type+
-                                '_{}_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
-                                adv_label, curr_target[k], eps, args.delta, args.alpha,
-                                args.num_comp), x_adv[k]/255)
-            img_count += 1
-            if img_count >= 10:
-                return
-    return
+PCA_FLAG = False
 
 def wb_write_out(eps, white_box_success, wb_norm):
     if RANDOM is False:
-        ofile = open('output_data/wb_'+args.loss_type+'_'+args.norm+'_based_classwise'+str(eps)+'_'+str(target_model_name)+'.txt', 'a')
-        ofile.write('{}'.format(white_box_success))
         print('Fraction of targets achieved (white-box) for {}: {}'.format(target, white_box_success))
     else:
-        if '_un' in args.method:
-            if '_iter' not in args.method:
-                filename = 'output_data/wb_un_'+args.loss_type+'_'+args.norm+'_'+target_model_name
-            else:
-                filename = 'output_data/wb_un_iter_'+args.loss_type+'_'+args.norm+'_'+target_model_name
-        else:
-            if '_iter' not in args.method:
-                filename = 'output_data/wb_'+args.loss_type+'_'+args.norm+'_'+target_model_name
-            else:
-                filename = 'output_data/wb_iter_'+args.loss_type+'_'+args.norm+'_'+target_model_name
-        if args.alpha != 0.0:
-            filename += '{:.2f}_rand'.format(args.alpha)
-        filename += '.txt'
-        ofile = open(filename,'a')
-        ofile.write('{} {} {} \n'.format(eps, white_box_success, wb_norm))
         print('Fraction of targets achieved (white-box): {}'.format(white_box_success))
     return
 
 def est_write_out(eps, success, avg_l2_perturb):
     if RANDOM is False:
-        ofile = open('output_data/'+args.method+'_'+args.loss_type+'_'+args.norm+'_classwise'+str(eps)+'_'+str(target_model_name)+'.txt', 'a')
-        ofile.write(' {} \n'.format(success))
         print('Fraction of targets achieved (query-based) with {} for {}: {}'.format(target_model_name, target, success))
     else:
-        if '_un' in args.method:
-            filename = 'output_data/'+args.method+'_'+args.loss_type+'_'+args.norm+'_'+target_model_name
-        else:
-            filename = 'output_data/'+args.method+'_'+args.loss_type+'_'+args.norm+'_'+target_model_name
-        if args.alpha != 0.0:
-            filename += '_{:.2f}_rand'.format(args.alpha)
-        if args.group_size != 1:
-            filename += '_{}_group'.format(args.group_size)
-        if PCA_FLAG == True:
-            filename += '_pca_{}'.format(args.num_comp)
-        filename += '.txt'
-        ofile = open(filename, 'a')
-        ofile.write('{} {} {} {}\n'.format(args.delta, eps, success, avg_l2_perturb))
         print('Fraction of targets achieved (query-based): {}'.format(success))
-    ofile.close()
     return
 
 def pca_components(X, dim):
@@ -175,7 +105,6 @@ def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim
 
         elif PCA_FLAG == True:
             basis_vec[:] = U[:,j].reshape((1, IMAGE_ROWS, IMAGE_COLS, NUM_CHANNELS))
-            # basis_vec = np.sign(basis_vec)
 
         x_plus_i = np.clip(curr_sample + args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
         x_minus_i = np.clip(curr_sample - args.delta * basis_vec, CLIP_MIN, CLIP_MAX)
@@ -195,8 +124,6 @@ def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim
         elif PCA_FLAG == True:
             grad_est += basis_vec*single_grad_est[:,None,None,None]
 
-    # if PCA_FLAG == True:
-    #     grad_est /= num_groups
     # Getting gradient of the loss
     if args.loss_type == 'xent':
         loss_grad = -1.0 * grad_est/p_t[:, None, None, None]
@@ -292,13 +219,7 @@ def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, ep
 
         adv_prediction = sess.run(prediction, feed_dict={x: x_adv})
         success += np.sum(np.argmax(adv_prediction,1) == curr_target)
-        est_img_save(i, adv_prediction, curr_target, eps, x_adv)
         
-        # img.imsave('images/'+args.method+'/'+args.norm+'/'+args.loss_type+
-        #             '_{}_{}_{}_{}_{}_{}.png'.format(target_model_name, 
-        #             curr_target[0], eps, args.delta, args.alpha,
-        #             args.group_size), x_adv[0]/255)
-
     success = 100.0 * float(success)/(BATCH_SIZE*BATCH_EVAL_NUM)
 
     if '_un' in args.method:
@@ -373,18 +294,6 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
         adv_prediction = sess.run(prediction, feed_dict={x: x_adv})
         success += np.sum(np.argmax(adv_prediction,1) == curr_target)
 
-        # est_img_save(i, adv_prediction, curr_target, eps, x_adv)
-        adv_label = np.argmax(adv_prediction[0].reshape(1, NUM_CLASSES),1)
-        # if adv_label[0] != curr_target[k]:
-        img.imsave('paper_images/'+args.method+'_'+args.norm+'_'+args.loss_type+
-                        '_{}_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
-                            adv_label, curr_target[0], eps, args.delta, args.alpha,
-                            args.num_comp), x_adv[0]/255)
-        # img.imsave('images/'+args.method+'/'+args.norm+'/'+args.loss_type+
-        #         '_{}_{}_{}_{}_{}_{}.png'.format(target_model_name,
-        #         curr_target[0], eps, args.delta, args.alpha,
-        #         args.group_size), (x_adv[0]-X_test_mod[0])/255)
-
     success = 100.0 * float(success)/(BATCH_SIZE*BATCH_EVAL_NUM)
 
     if '_un' in args.method:
@@ -437,10 +346,7 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
 
     X_test_mod = X_test[random_indices]
     X_test_ini_mod = X_test_ini[random_indices]
-    # targets = targets[:BATCH_SIZE*BATCH_EVAL_NUM]
-    # targets_cat = targets_cat[:BATCH_SIZE*BATCH_EVAL_NUM]
 
-    # X_test_ini_slice = X_test_ini[:BATCH_SIZE*BATCH_EVAL_NUM]
     X_adv_t = np.zeros_like(X_test_mod)
     adv_pred_np = np.zeros((len(X_test_mod), NUM_CLASSES))
     pred_np = np.zeros((len(X_test_mod), NUM_CLASSES))
@@ -455,9 +361,6 @@ def white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, t
         pred_np_i = sess.run(prediction, feed_dict={x: X_test_slice})
         pred_np[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:] = pred_np_i
 
-    wb_img_save(adv_pred_np, targets, eps, X_adv_t)
-
-    # _, _, white_box_error = tf_test_error_rate(logits, x, X_adv_t, targets_cat)
     white_box_success = 100.0 * np.sum(np.argmax(adv_pred_np, 1) == targets)/len(X_test_mod)
     if '_un' in args.method:
         white_box_success = 100.0 - white_box_success
@@ -585,6 +488,11 @@ if '_un' in args.method:
     RANDOM = True
 if args.num_comp != 3072:
     PCA_FLAG=True
+
+if '_iter' in args.method:
+    BATCH_EVAL_NUM = 10
+else:
+    BATCH_EVAL_NUM = 100
 
 # if RANDOM is False:
 #     ofile = open('output_data/'+args.method+'_classwise'+str(eps)+
