@@ -9,19 +9,16 @@ from carlini_li import CarliniLi
 from attack_utils import gen_grad
 from tf_utils import tf_test_error_rate, batch_eval
 from os.path import basename
-from matplotlib import image as img
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
 def main(attack, target_model_name, source_model_names):
-    script_dir = os.path.dirname(__file__)
     np.random.seed(0)
     tf.set_random_seed(0)
 
     flags.DEFINE_integer('BATCH_SIZE', 10, 'Size of batches')
-    flags.DEFINE_integer('IMAGE_NUM', 0, 'Number of images to print')
     set_mnist_flags()
 
     x = K.placeholder((None,
@@ -68,8 +65,6 @@ def main(attack, target_model_name, source_model_names):
         logits = src_model(x)
         grad = gen_grad(x, logits, y)
 
-        ofile = open('output_data/blind_transfer/'+basename(src_model_name)+'_to_'+basename(target_model_name)+'.txt', 'a')
-        # ofile.write(args.attack+'\n')
         for eps in eps_list:
             # take the random step in the RAND+FGSM
             if attack == "rand_fgs":
@@ -90,17 +85,12 @@ def main(attack, target_model_name, source_model_names):
 
             # Carlini & Wagner attack
             if attack == "CW":
-                ofile = open('output_data/CW_attack_success.txt','a')
                 l = 1000
                 pickle_name = 'CW_adv_samples/' + basename(src_model_name) +'_adv_'+str(eps)+'.p'
                 Y_test = Y_test[0:l]
                 if os.path.exists(pickle_name):
                     print 'Loading adversarial samples'
                     X_adv = pickle.load(open(pickle_name,'rb'))
-
-                    #err = tf_test_error_rate(src_model, x, X_adv, Y_test)
-                    #print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
-                    #ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
                     _, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
                     print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
                     print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
@@ -118,9 +108,6 @@ def main(attack, target_model_name, source_model_names):
                 X_adv = X_test + r
                 pickle.dump(X_adv, open(pickle_name,'wb'))
 
-               # err = tf_test_error_rate(src_model, x, X_adv, Y_test)
-               # print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(src_model_name), err, eps, attack)
-               # ofile.write('{}->{}: {:.1f}, {} \n'.format(basename(src_model_name), basename(src_model_name), err, eps, attack))
                 _, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
                 print '{}->{}: {:.1f}, {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
                 ofile.write('{} {:.2f} \n'.format(basename(src_model_name), basename(target_model_name), err, eps, attack))
@@ -129,20 +116,10 @@ def main(attack, target_model_name, source_model_names):
 
             # compute the adversarial examples and evaluate
             X_adv = batch_eval([x, y], [adv_x], [X_test, Y_test])[0]
-            # print(X_adv.shape())
-
-            rel_path_i = 'images/'
-            abs_path_i = os.path.join(script_dir, rel_path_i)
-            for i in range(FLAGS.IMAGE_NUM):
-                img.imsave(abs_path_i + basename(src_model_name) + '_{}_mag{}.png'.format(i, eps),
-                    X_adv[i].reshape(FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS) * 255,
-                            vmin=0, vmax=255, cmap='gray')
 
             # first run is white-box, then black-box attacks
             _, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
             print '{}->{}: {:.1f}, {} {}'.format(basename(src_model_name), basename(target_model_name), err, eps, attack)
-            ofile.write('{} {:.2f} \n'.format(eps, err))
-    ofile.close()
 
 
 if __name__ == "__main__":

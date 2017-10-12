@@ -4,16 +4,17 @@ import keras.backend as K
 import cPickle as pickle
 import os
 from mnist import data_mnist, set_mnist_flags, load_model
-from fgs import symbolic_fgs, iter_fgs, symbolic_fg, symbolic_second_ord
+from fgs import symbolic_fgs, iter_fgs, symbolic_fg
 from carlini_li import CarliniLi
-from carlini_li_grad_free import CarliniLi_grad_free
-from attack_utils import gen_grad, gen_hessian
+from attack_utils import gen_grad
 from tf_utils import tf_test_error_rate, batch_eval
 from os.path import basename
 from time import time
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
+
+SAVE_FLAG = False
 
 
 def main(attack, src_model_name, target_model_names):
@@ -45,11 +46,11 @@ def main(attack, src_model_name, target_model_names):
 
     # simply compute test error
     if attack == "test":
-        _,_, err = tf_test_error_rate(src_model, x, X_test, Y_test)
-        print '{}: {:.1f}'.format(basename(src_model_name), err)
+        _, _, err = tf_test_error_rate(src_model, x, X_test, Y_test)
+        print('{}: {:.1f}'.format(basename(src_model_name), err))
 
         for (name, target_model) in zip(target_model_names, target_models):
-            err = tf_test_error_rate(target_model, x, X_test, Y_test)
+            _, _, err = tf_test_error_rate(target_model, x, X_test, Y_test)
             print '{}: {:.1f}'.format(basename(name), err)
         return
 
@@ -71,31 +72,12 @@ def main(attack, src_model_name, target_model_names):
     elif attack in ["fgs", "rand_fgs"] and args.norm == 'two':
         adv_x = symbolic_fg(x, grad, eps=eps)
 
-    if attack == "second_ord":
-        # x_rs = tf.reshape(x, [dim])
-        x_rs = K.placeholder((dim))
-        y_rs = K.placeholder((FLAGS.NUM_CLASSES))
-        logits_rs = src_model(tf.reshape(x_rs, (1, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS)))
-        grad_rs = gen_grad(x_rs, logits_rs, y_rs)
-        # hessian = gen_hessian(x_rs, logits_rs, y_rs)
-        # adv_x = symbolic_second_ord(x, grad_rs, hessian, dim, eps=eps)
-        adv_x = symbolic_fgs(x_rs, grad_rs, eps=eps)
-        X_test = X_test.reshape((10000, dim))
-        l=1
-        # X_adv = batch_eval([x_rs, y_rs], [adv_x], [X_test[0:l], Y_test[0:l]])[0]
-        X_adv = []
-        for i in range(l):
-            X_adv.append(K.get_session().run([adv_x], feed_dict={x_rs: X_test[i], y_rs: Y_test[i],
-                                                        K.learning_phase(): 0})[0])
-        X_adv = np.array(X_adv)
-        X_adv = X_adv.reshape((l, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
-
     # iterative FGSM
     if attack == "ifgs":
         adv_x = iter_fgs(src_model, x, y, steps=args.steps, alpha = 0.01, eps=args.eps)
 
     # Carlini & Wagner attack
-    if attack == "CW" or attack == "CW_gf":
+    if attack == "CW":
         l = 1000
         pickle_name = attack + '_adv_samples/' + basename(src_model_name)+'_adv_'+str(args.eps)+'.p'
         print(pickle_name)
@@ -103,7 +85,6 @@ def main(attack, src_model_name, target_model_names):
         if os.path.exists(pickle_name) and attack == "CW":
             print 'Loading adversarial samples'
             X_adv = pickle.load(open(pickle_name,'rb'))
-            ofile = open('output_data/'+attack+'_attack_success.txt','a')
 
             preds_adv, _, err = tf_test_error_rate(src_model, x, X_adv, Y_test)
 
@@ -111,20 +92,14 @@ def main(attack, src_model_name, target_model_names):
             pickle.dump(preds_adv, open(pickle_name, 'wb'))
 
             print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(src_model_name), err)
-            ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(src_model_name), err))
             for (name, target_model) in zip(target_model_names, target_models):
                     preds_adv,_,err = tf_test_error_rate(target_model, x, X_adv, Y_test)
                     print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(name), err)
                     ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(name), err))
-
-            ofile.close()
             return
         X_test = X_test[0:l]
         time1 = time()
-        if attack == "CW_gf":
-            cli = CarliniLi_grad_free(K.get_session(), src_model, targeted=False,
-                                    confidence=args.kappa, eps=args.eps, mu=args.mu)
-        elif attack == "CW":
+        if attack == "CW":
             cli = CarliniLi(K.get_session(), src_model, targeted=False,
                                     confidence=args.kappa, eps=args.eps)
 
@@ -141,36 +116,27 @@ def main(attack, src_model_name, target_model_names):
 
         preds, orig, err = tf_test_error_rate(src_model, x, X_adv, Y_test)
         print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(src_model_name), err)
-        ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(src_model_name), err))
         for (name, target_model) in zip(target_model_names, target_models):
             pres, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
             print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(name), err)
-            ofile.write('{}->{}: {:.1f} \n'.format(basename(src_model_name), basename(name), err))
 
-        ofile.close()
         return
 
-    # compute the adversarial examples and evaluate
-    if attack != "second_ord":
-        X_adv = batch_eval([x, y], [adv_x], [X_test, Y_test])[0]
 
-    pickle_name = 'adv_samples/' + attack + '/' + basename(src_model_name)+'_'+str(args.eps)+'_adv.p'
-    pickle.dump(X_adv, open(pickle_name,'wb'))
-    pickle_name = 'orig_images.p'
-    pickle.dump(X_test, open(pickle_name, 'wb'))
+    X_adv = batch_eval([x, y], [adv_x], [X_test, Y_test])[0]
+
+    if SAVE_FLAG == True:
+        pickle_name = 'adv_samples/' + attack + '/' + basename(src_model_name)+'_'+str(args.eps)+'_adv.p'
+        pickle.dump(X_adv, open(pickle_name,'wb'))
+        pickle_name = 'orig_images.p'
+        pickle.dump(X_test, open(pickle_name, 'wb'))
 
     # white-box attack
     l = len(X_adv)
 
     preds_adv, orig, err = tf_test_error_rate(src_model, x, X_adv, Y_test[0:l])
-    # pickle_name = 'orig_labels.p'
-    # pickle.dump(orig, open(pickle_name, 'wb'))
-    # pickle_name = attack + '_adv_samples/' + basename(src_model_name)+'_labels_'+str(args.eps)+'.p'
-    # pickle.dump(preds_adv, open(pickle_name, 'wb'))
 
     preds_orig, _, _ = tf_test_error_rate(src_model,x, X_test, Y_test[0:l])
-    # pickle_name = basename(src_model_name)+'_labels.p'
-    # pickle.dump(preds_orig, open(pickle_name, 'wb'))
 
     print '{}->{}: {:.1f}'.format(basename(src_model_name), basename(src_model_name), err)
 
