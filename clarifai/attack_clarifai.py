@@ -6,27 +6,31 @@ from clarifai.rest import Image as ClImage
 import time
 import argparse
 
-def moderation_dict_reader(concepts_list, preds_array):
-    preds_array[0]=filter(lambda concept: concept['name'] == 'safe', concepts_list)[0]['value']
-    preds_array[1]=filter(lambda concept: concept['name'] == 'suggestive', concepts_list)[0]['value']
-    preds_array[2]=filter(lambda concept: concept['name'] == 'explicit', concepts_list)[0]['value']
-    preds_array[3]=filter(lambda concept: concept['name'] == 'drug', concepts_list)[0]['value']
-    preds_array[4]=filter(lambda concept: concept['name'] == 'gore', concepts_list)[0]['value']
+def dict_reader(concepts_list, preds_array):
+    if args.target_model == 'moderation':
+        preds_array[0]=filter(lambda concept: concept['name'] == 'safe', concepts_list)[0]['value']
+        preds_array[1]=filter(lambda concept: concept['name'] == 'suggestive', concepts_list)[0]['value']
+        preds_array[2]=filter(lambda concept: concept['name'] == 'explicit', concepts_list)[0]['value']
+        preds_array[3]=filter(lambda concept: concept['name'] == 'drug', concepts_list)[0]['value']
+        preds_array[4]=filter(lambda concept: concept['name'] == 'gore', concepts_list)[0]['value']
+    elif args.target_model == 'nsfw-v1.0':
+        preds_array[0]=filter(lambda concept: concept['name'] == 'sfw', concepts_list)[0]['value']
+        preds_array[1]=filter(lambda concept: concept['name'] == 'nsfw', concepts_list)[0]['value']
     return preds_array
 
 def CW_est(x_plus_i, x_minus_i, curr_target, max_index):
     image_plus=ClImage(file_obj=open(x_plus_i,'rb'))
-    pred_plus=np.zeros((5))
+    pred_plus=np.zeros((num_classes))
     pred_plus_dict = model.predict([image_plus])['outputs'][0]['data']['concepts']
-    pred_plus = moderation_dict_reader(pred_plus_dict, pred_plus)
+    pred_plus = dict_reader(pred_plus_dict, pred_plus)
     logit_plus = np.log(pred_plus)
     logit_plus_t = logit_plus[curr_target]
     logit_plus_max = logit_plus[max_index]
 
     image_minus=ClImage(file_obj=open(x_minus_i,'rb'))
-    pred_minus=np.zeros((5))
+    pred_minus=np.zeros((num_classes))
     pred_minus_dict = model.predict([image_minus])['outputs'][0]['data']['concepts']
-    pred_minus = moderation_dict_reader(pred_minus_dict, pred_minus)
+    pred_minus = dict_reader(pred_minus_dict, pred_minus)
     logit_minus = np.log(pred_minus)
     logit_minus_t = logit_minus[curr_target]
     logit_minus_max = logit_minus[max_index]
@@ -39,15 +43,15 @@ def CW_est(x_plus_i, x_minus_i, curr_target, max_index):
 
 def xent_est(x_plus_i, x_minus_i, curr_target):
     image_plus=ClImage(file_obj=open(x_plus_i,'rb'))
-    pred_plus=np.zeros((5))
+    pred_plus=np.zeros((num_classes))
     pred_plus_dict = model.predict([image_plus])['outputs'][0]['data']['concepts']
-    pred_plus = moderation_dict_reader(pred_plus_dict, pred_plus)
+    pred_plus = dict_reader(pred_plus_dict, pred_plus)
     pred_plus_t = pred_plus[curr_target]
     
     image_minus=ClImage(file_obj=open(x_minus_i,'rb'))
-    pred_minus=np.zeros((5))
+    pred_minus=np.zeros((num_classes))
     pred_minus_dict = model.predict([image_minus])['outputs'][0]['data']['concepts']
-    pred_minus = moderation_dict_reader(pred_minus_dict, pred_minus)
+    pred_minus = dict_reader(pred_minus_dict, pred_minus)
     pred_minus_t = pred_minus[curr_target]
     single_grad_est = (pred_plus_t - pred_minus_t)/delta
     print(single_grad_est)
@@ -58,7 +62,7 @@ def finite_diff_method(curr_sample, curr_target, p_t, max_index, U=None):
     grad_est = np.zeros((IMAGE_ROWS, IMAGE_COLS, NUM_CHANNELS))
     random_indices = np.random.permutation(dim)
     num_groups = dim / group_size
-    print num_groups
+    print ('Num_groups: {}'.format(num_groups))
     for j in range(num_groups):
         if j % 100 == 0:
             print j
@@ -94,13 +98,13 @@ def finite_diff_method(curr_sample, curr_target, p_t, max_index, U=None):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("target_image_name", help="Image to misclassify")
-parser.add_argument("--target_model", type=str, default='moderation', 
+parser.add_argument("--target_model", type=str, default='nsfw-v1.0', 
                     help="target model for attack")
 parser.add_argument("--eps", type=int, default=16, 
                     help="perturbation magnitude to use")
 parser.add_argument("--num_iter", type=int, default=5, 
                     help="number of iterations to run")
-parser.add_argument("--group_size", type=int, default=100000,
+parser.add_argument("--group_size", type=int, default=10000,
                     help="Number of features to group together")
 parser.add_argument("--delta", type=float, default=0.01,
                     help="local perturbation")
@@ -130,11 +134,15 @@ group_size=args.group_size
 eps=args.eps
 norm='linf'
 alpha = float(args.eps/args.num_iter)
+if args.target_model == 'moderation':
+    num_classes = 5
+elif args.target_model == 'nsfw-v1.0':
+    num_classes = 2
 
-curr_prediction = np.zeros((5))
+curr_prediction = np.zeros((num_classes))
 image_cl=ClImage(file_obj=open(curr_image,'rb'))
 curr_predict_dict = model.predict([image_cl])['outputs'][0]['data']['concepts']
-curr_prediction = moderation_dict_reader(curr_predict_dict, curr_prediction)
+curr_prediction = dict_reader(curr_predict_dict, curr_prediction)
 print("Original prediction: {}".format(curr_prediction))
 
 temp_sample = curr_sample
@@ -144,9 +152,9 @@ curr_target = 0
 for i in range(args.num_iter):
     image_cl=ClImage(file_obj=open(temp_image,'rb'))
 
-    temp_prediction = np.zeros((5))
+    temp_prediction = np.zeros((num_classes))
     temp_predict_dict = model.predict([image_cl])['outputs'][0]['data']['concepts']
-    temp_prediction = moderation_dict_reader(temp_predict_dict, temp_prediction)
+    temp_prediction = dict_reader(temp_predict_dict, temp_prediction)
     temp_logits = np.log(temp_prediction)
     max_index = np.argmax(temp_prediction)
     print('Max_index: {}'.format(max_index))
@@ -174,7 +182,7 @@ for i in range(args.num_iter):
     temp_image = args.target_image_name+'temp.jpg'
     mpimg.imsave(temp_image, temp_sample/255)
 
-x_adv = args.target_image_name+'_adv_'+str(args.eps)+'_'+str(args.num_iter)+'_'+str(args.group_size)+'.jpg'
+x_adv = args.target_image_name+'_adv_'+str(args.eps)+'_'+str(args.num_iter)+'_'+str(args.delta)+'_'+str(args.group_size)+'.jpg'
 mpimg.imsave(x_adv, temp_sample/255)
 
 # Getting the norm of the perturbation
@@ -184,9 +192,9 @@ avg_l2_perturb += perturb_norm_batch
 
 image_adv_cl=ClImage(file_obj=open(x_adv,'rb'))
 
-adv_prediction = np.zeros((5))
+adv_prediction = np.zeros((num_classes))
 adv_predict_dict = model.predict([image_adv_cl])['outputs'][0]['data']['concepts']
-adv_prediction = moderation_dict_reader(adv_predict_dict, adv_prediction)
+adv_prediction = dict_reader(adv_predict_dict, adv_prediction)
 success += np.sum(np.argmax(adv_prediction) == curr_target)
 
 success = 100.0 * float(success)
