@@ -201,8 +201,6 @@ def modelF():
 
     return model
 
-
-
 def model_mnist(type=1):
     """
     Defines MNIST model using Keras sequential model
