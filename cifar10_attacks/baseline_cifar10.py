@@ -4,7 +4,6 @@ import keras.backend as K
 import models
 from os.path import basename
 from matplotlib import image as img
-# from cifar10_setup import set_cifar10_flags
 
 
 NUM_CLASSES = 10
@@ -82,8 +81,6 @@ def naive_untargeted_attack(X, y):
         for j in range(100):
             if i == j: continue
             else:
-                # if y[i]==y[j]:
-                #     continue
                 if y[i] != y[j]:
                     data_diff = curr_data - X[j, :]
                     data_dist = np.linalg.norm(data_diff)
@@ -113,11 +110,6 @@ def main(target_model_name):
     Y_test_batches = Y_test.reshape((-1, BATCH_SIZE_G, NUM_CLASSES))
     print('Loaded data')
 
-
-    # i = 6711
-    # img.imsave( 'images/cifar10_{}.png'.format(i),
-    #             X_test[i]/255)
-
     Y_test_uncat = np.argmax(Y_test,1)
     Y_test_uncat_batches = Y_test_uncat.reshape((-1, BATCH_SIZE_G))
 
@@ -130,16 +122,9 @@ def main(target_model_name):
     sess = tf.Session()
     target_model.load(sess)
     print('Creating session')
-
-    # accuracy = target_model.get_accuracy()
-    # accuracy_np = sess.run(accuracy,feed_dict={x: X_test, y: Y_test_uncat})
-    # print(accuracy_np)
-
-    # return
     
     benign_success = 0.0
-
-
+    
     for i in range(len(X_test_batches)):
         predictions_np = sess.run(prediction, feed_dict={x: X_test_batches[i]})
         benign_success += np.sum(np.argmax(predictions_np, 1) != Y_test_uncat_batches[i])
@@ -152,16 +137,9 @@ def main(target_model_name):
 
     if args.norm == 'linf':
         eps_list = list(np.linspace(0.0, 32.0, 9))
-        # eps_list = [4]
     elif args.norm == 'l2':
         eps_list = list(np.linspace(0.0, 9.0, 28))
-        # eps_list = [6.0]
     print eps_list
-
-    if args.targeted_flag == 0:
-        ofile = open('output_data/baseline_'+args.norm+'_md_rand_'+str(args.alpha)+'_'+str(target_model_name)+'.txt', 'a')
-    elif args.targeted_flag == 1:
-        ofile = open('output_data/baseline_target_'+args.norm+'_md_rand_'+str(args.alpha)+'_'+str(target_model_name)+'.txt', 'a')
 
     for eps in eps_list:
         eps_orig = eps
@@ -203,9 +181,6 @@ def main(target_model_name):
                     targets.append(target)
                     mean_diff_array[j] = means[target] - means[i]
 
-            # img.imsave( 'images/cifar10_mean_{}.png'.format(i),
-                        # means[i]/255)
-
             if args.norm == 'linf':
                 if args.targeted_flag == 0:
                     mean_diff_vec_signed = np.sign(mean_diff_vec)
@@ -232,19 +207,11 @@ def main(target_model_name):
                 print(targets)
                 adv_success += np.sum(np.argmax(predictions_adv, 1) == np.array(targets))
 
-            # for k in range(1):
-            #     adv_label = np.argmax(predictions_adv[k].reshape(1, NUM_CLASSES),1)
-            #     img.imsave( 'images/baseline/'+args.norm+'/md_{}_{}_{}_{}_{}_{}.png'.format(
-            #             i, k, adv_label, closest_class, eps, alpha),
-            #             X_adv[k]/255)
         err = 100.0 * adv_success/ len(X_test)
         avg_l2_perturb = avg_l2_perturb/NUM_CLASSES
 
         print('{}, {}, {}'.format(eps, alpha, err))
         print('{}'.format(avg_l2_perturb))
-        ofile.write('{:.2f} {:.2f} {:.2f} {:.2f} \n'.format(eps, alpha, err, avg_l2_perturb))
-    # ofile.write('\n \n')
-    ofile.close()
 
 if __name__ == "__main__":
     import argparse

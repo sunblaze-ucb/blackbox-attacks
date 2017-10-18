@@ -16,6 +16,9 @@ latex_plots/*
 cifar10_attacks/images/
 cifar10_attacks/logs/
 cifar10-ensadv/
-clarifai/clarifai_images/
+clarifai/clarifai_images/*
 models/
 output_data/*
+paper_images/
+*.png
+*.jpg
