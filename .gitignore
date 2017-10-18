@@ -18,3 +18,4 @@ cifar10_attacks/logs/
 cifar10-ensadv/
 clarifai/clarifai_images/
 models/
+output_data/*

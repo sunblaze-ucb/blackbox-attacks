@@ -40,9 +40,8 @@ def main(model_name, model_type):
         tf_train(x, y, model, X_train, Y_train, data_gen, None, None)
 
         # Finally print the result!
-        test_error = tf_test_error_rate(model, x, X_test, Y_test)
-        print('Test error: %.1f%%' % test_error)
-        # model_name += '_cross_lip'
+        _, _, test_error = tf_test_error_rate(model, x, X_test, Y_test)
+        print('Test error: %.1f%%' % test_error)lsm
         save_model(model, model_name)
         json_string = model.to_json()
         with open(model_name+'.json', 'wr') as f:

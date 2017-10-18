@@ -32,18 +32,12 @@ def data_mnist(one_hot=True):
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
     y_train = y_train
-    # y_val = y_train[-10000:]
 
 
     X_train = X_train.reshape(X_train.shape[0],
                               FLAGS.IMAGE_ROWS,
                               FLAGS.IMAGE_COLS,
                               FLAGS.NUM_CHANNELS)
-
-    # X_val = X_train[-10000:].reshape(10000,
-    #                           FLAGS.IMAGE_ROWS,
-    #                           FLAGS.IMAGE_COLS,
-    #                           FLAGS.NUM_CHANNELS)
 
     X_test = X_test.reshape(X_test.shape[0],
                             FLAGS.IMAGE_ROWS,
@@ -52,13 +46,11 @@ def data_mnist(one_hot=True):
 
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
-    # X_val = X_val.astype('float32')
     X_train /= 255
     X_test /= 255
     print('X_train shape:', X_train.shape)
     print(X_train.shape[0], 'train samples')
     print(X_test.shape[0], 'test samples')
-    # print(X_val.shape[0], 'validation samples')
 
     print "Loaded MNIST test data."
 
@@ -66,21 +58,17 @@ def data_mnist(one_hot=True):
         # convert class vectors to binary class matrices
         y_train = np_utils.to_categorical(y_train, FLAGS.NUM_CLASSES).astype(np.float32)
         y_test = np_utils.to_categorical(y_test, FLAGS.NUM_CLASSES).astype(np.float32)
-        # y_val = np_utils.to_categorical(y_val, FLAGS.NUM_CLASSES).astype(np.float32)
 
     return X_train, y_train, X_test, y_test
 
 
 def modelA():
     model = Sequential()
-    model.add(Convolution2D(64, 5, 5,
-                            border_mode='valid',
-                            input_shape=(FLAGS.IMAGE_ROWS,
-                                         FLAGS.IMAGE_COLS,
-                                         FLAGS.NUM_CHANNELS)))
+    model.add(Conv2D(64, (5, 5),
+                            padding='valid'))
     model.add(Activation('relu'))
 
-    model.add(Convolution2D(64, 5, 5))
+    model.add(Conv2D(64, (5, 5)))
     model.add(Activation('relu'))
 
     model.add(Dropout(0.25))
