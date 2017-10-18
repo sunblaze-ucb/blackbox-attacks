@@ -14,6 +14,10 @@ def moderation_dict_reader(concepts_list, preds_array):
     preds_array[4]=filter(lambda concept: concept['name'] == 'gore', concepts_list)[0]['value']
     return preds_array
 
+def nsfw_dict_reader(concepts_list, preds_array):
+    preds_array[0]=filter(lambda concept: concept['name'] == 'sfw', concepts_list)[0]['value']
+    preds_array[1]=filter(lambda concept: concept['name'] == 'nsfw', concepts_list)[0]['value']
+
 def CW_est(x_plus_i, x_minus_i, curr_target, max_index):
     image_plus=ClImage(file_obj=open(x_plus_i,'rb'))
     pred_plus=np.zeros((5))

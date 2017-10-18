@@ -4,15 +4,7 @@ title: About
 permalink: /about/
 ---
 
-This is the base Jekyll theme. You can find out more info about customizing your Jekyll theme, as well as basic Jekyll usage documentation at [jekyllrb.com](https://jekyllrb.com/)
-
-You can find the source code for Minima at GitHub:
-[jekyll][jekyll-organization] /
-[minima](https://github.com/jekyll/minima)
-
-You can find the source code for Jekyll at GitHub:
-[jekyll][jekyll-organization] /
-[jekyll](https://github.com/jekyll/jekyll)
+This website contains results from a black-box attack on models hosted by Clarifai. The details of these attacks can be found in our recent arXiv paper ['Exploring the Space of Black-box Attacks on DeepNeural Networks'][arxiv-link]. The models we attack are the NSFW model and the Content Moderation model. Since the input images to these models can be disturbing or offensive, we display both the benign and adversarial images on this website. For any questions, please email Arjun Nitin Bhagoji (abhagoji@princeton.edu).
 
 
-[jekyll-organization]: https://github.com/jekyll
+[arxiv-link]:

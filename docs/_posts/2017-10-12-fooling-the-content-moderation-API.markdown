@@ -1,6 +1,7 @@
 ---
 layout: post
-title:  "Fooling the content moderation API"
+title:  "Fooling Clarifai's content moderation model"
+author: Arjun Nitin Bhagoji
 categories: posts
 ---
 
@@ -54,7 +55,7 @@ When the API returns the classification outcome for this image, it returns the f
 ```
 On this image, the classifier's confidence that the image belongs to the concept class 'drugs' is 0.99, which is given in the 'concepts' output. The classifier's confidence that the image is 'safe' is negligible. 
 
-Since the black-box content moderation model returns the confidence scores, the Gradient Estimation attack can be used. Without query reduction, even a single step attack would take roughly 200,000 queries. In order to reduce the number of queries, the random grouping method for query reduction is used with a group size of 1,000. This leads to a total of 197 queries to the model through the API. Using a perturbation magnitude of 32 (maximum possible is 255), the following adversarial image is obtained:
+Since the black-box Content Moderation model returns the confidence scores, the Gradient Estimation attack can be used. Without query reduction, even a single step attack would take roughly 200,000 queries. In order to reduce the number of queries, the random grouping method for query reduction is used with a group size of 1,000. This leads to a total of 197 queries to the model through the API. Using a perturbation magnitude of 32 (maximum possible is 255) with a single step in the direction of the estimated gradient, the following adversarial image is obtained:
 <figure>
   <img src="{{site.baseurl}}/assets/drugs_small_adv_32.jpg" alt="my alt text"/>
   <figcaption>Adversarial image with perturbation magnitude of 32.</figcaption>
