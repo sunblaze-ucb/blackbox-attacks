@@ -179,11 +179,11 @@ for i in range(args.num_iter):
     image_adv = temp_sample - alpha * normed_loss_grad
     r = np.clip(image_adv-curr_sample, -eps, eps)
     temp_sample = np.clip(curr_sample + r, CLIP_MIN, CLIP_MAX)
-    temp_image = args.target_image_name+'temp.jpg'
-    mpimg.imsave(temp_image, temp_sample/255)
+    temp_image = args.target_image_name+'temp.png'
+    mpimg.imsave(temp_image, np.round(temp_sample).astype(np.uint8))
 
-x_adv = args.target_image_name+'_adv_'+str(args.eps)+'_'+str(args.num_iter)+'_'+str(args.delta)+'_'+str(args.group_size)+'.jpg'
-mpimg.imsave(x_adv, temp_sample/255)
+x_adv = args.target_image_name+'_adv_'+str(args.eps)+'_'+str(args.num_iter)+'_'+str(args.delta)+'_'+str(args.group_size)+'.png'
+mpimg.imsave(x_adv, np.round(temp_sample).astype(np.uint8))
 
 # Getting the norm of the perturbation
 perturb_norm = np.linalg.norm((image_adv-curr_sample).reshape(dim))
