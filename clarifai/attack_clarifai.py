@@ -1,10 +1,10 @@
 from clarifai.rest import ClarifaiApp
-import scipy.misc
 import matplotlib.image as mpimg
 import numpy as np
 from clarifai.rest import Image as ClImage
 import time
 import argparse
+import StringIO
 
 def dict_reader(concepts_list, preds_array):
     if args.target_model == 'moderation':
@@ -22,77 +22,73 @@ def nsfw_dict_reader(concepts_list, preds_array):
     preds_array[0]=filter(lambda concept: concept['name'] == 'sfw', concepts_list)[0]['value']
     preds_array[1]=filter(lambda concept: concept['name'] == 'nsfw', concepts_list)[0]['value']
 
-def CW_est(x_plus_i, x_minus_i, curr_target, max_index):
-    image_plus=ClImage(file_obj=open(x_plus_i,'rb'))
-    pred_plus=np.zeros((num_classes))
-    pred_plus_dict = model.predict([image_plus])['outputs'][0]['data']['concepts']
-    pred_plus = dict_reader(pred_plus_dict, pred_plus)
-    logit_plus = np.log(pred_plus)
-    logit_plus_t = logit_plus[curr_target]
-    logit_plus_max = logit_plus[max_index]
+def CW_est_batch(pred_plus_batch, pred_minus_batch, curr_target, max_index):
+    logit_plus = np.log(pred_plus_batch)
+    logit_plus_t = logit_plus[:, curr_target]
+    logit_plus_max = logit_plus[:, max_index]
+    logit_minus = np.log(pred_minus_batch)
+    logit_minus_t = logit_minus[:, curr_target]
+    logit_minus_max = logit_minus[:, max_index]
 
-    image_minus=ClImage(file_obj=open(x_minus_i,'rb'))
-    pred_minus=np.zeros((num_classes))
-    pred_minus_dict = model.predict([image_minus])['outputs'][0]['data']['concepts']
-    pred_minus = dict_reader(pred_minus_dict, pred_minus)
-    logit_minus = np.log(pred_minus)
-    logit_minus_t = logit_minus[curr_target]
-    logit_minus_max = logit_minus[max_index]
+    logit_t_grad_est = (logit_plus_t - logit_minus_t) / delta / 2.0
+    logit_max_grad_est = (logit_plus_max - logit_minus_max) / delta / 2.0
+    return logit_max_grad_est - logit_t_grad_est
 
-    logit_t_grad_est = (logit_plus_t - logit_minus_t)/delta
-    logit_max_grad_est = (logit_plus_max - logit_minus_max)/delta
+def xent_est_batch(pred_plus_batch, pred_minus_batch, curr_target):
+    pred_plus_t = pred_plus_batch[:, curr_target]
+    pred_minus_t = pred_minus_batch[:, curr_target]
 
-    return logit_t_grad_est/2.0, logit_max_grad_est/2.0
-
-
-def xent_est(x_plus_i, x_minus_i, curr_target):
-    image_plus=ClImage(file_obj=open(x_plus_i,'rb'))
-    pred_plus=np.zeros((num_classes))
-    pred_plus_dict = model.predict([image_plus])['outputs'][0]['data']['concepts']
-    pred_plus = dict_reader(pred_plus_dict, pred_plus)
-    pred_plus_t = pred_plus[curr_target]
-    
-    image_minus=ClImage(file_obj=open(x_minus_i,'rb'))
-    pred_minus=np.zeros((num_classes))
-    pred_minus_dict = model.predict([image_minus])['outputs'][0]['data']['concepts']
-    pred_minus = dict_reader(pred_minus_dict, pred_minus)
-    pred_minus_t = pred_minus[curr_target]
-    single_grad_est = (pred_plus_t - pred_minus_t)/delta
-    print(single_grad_est)
-
-    return single_grad_est/2.0
+    return (pred_plus_t - pred_minus_t) / delta / 2.0
 
 def finite_diff_method(curr_sample, curr_target, p_t, max_index, U=None):
-    grad_est = np.zeros((IMAGE_ROWS, IMAGE_COLS, NUM_CHANNELS))
+    # Randomly assign groups of group_size
     random_indices = np.random.permutation(dim)
     num_groups = dim / group_size
     print ('Num_groups: {}'.format(num_groups))
+    group_indices = np.array_split(random_indices, num_groups)
+
+    buffers = []
+
     for j in range(num_groups):
-        if j % 100 == 0:
-            print j
+        # Create a perturbation for this group
         basis_vec = np.zeros((IMAGE_ROWS, IMAGE_COLS, NUM_CHANNELS))
-        if j != num_groups-1:
-            curr_indices = random_indices[j*group_size:(j+1)*group_size]
-        elif j == num_groups-1:
-            curr_indices = random_indices[j*group_size:]
-        per_c_indices = curr_indices%(IMAGE_COLS*IMAGE_ROWS)
-        channel = curr_indices/(IMAGE_COLS*IMAGE_ROWS)
-        row = per_c_indices/IMAGE_COLS
-        col = per_c_indices % IMAGE_COLS
-        for i in range(len(curr_indices)):
-            basis_vec[row[i], col[i], channel[i]] = 1.
+        basis_vec_flat = basis_vec.reshape(-1)
+        basis_vec_flat[group_indices[j]] = 1.
+
+        # Generate perturbed images
         image_plus_i = np.clip(curr_sample + delta * basis_vec, CLIP_MIN, CLIP_MAX)
-        x_plus_i = 'clarifai_images/moderation_image_plus.jpg'
-        mpimg.imsave(x_plus_i,image_plus_i/255)
         image_minus_i = np.clip(curr_sample - delta * basis_vec, CLIP_MIN, CLIP_MAX)
-        x_minus_i = 'clarifai_images/moderation_image_minus.jpg'
-        mpimg.imsave(x_minus_i,image_minus_i/255)
-        
-#         single_grad_est = xent_est(x_plus_i, x_minus_i, curr_target)
-        logit_t_grad_est, logit_max_grad_est = CW_est(x_plus_i, x_minus_i, curr_target, max_index)
-        single_grad_est = logit_max_grad_est - logit_t_grad_est
-        for i in range(len(curr_indices)):
-            grad_est[row[i], col[i], channel[i]] = single_grad_est.reshape((1))
+
+        # Serialize perturbed images for submission
+        buf_plus = StringIO.StringIO()
+        mpimg.imsave(buf_plus, np.round(image_plus_i).astype(np.uint8), format='png')
+        buffers.append(buf_plus)
+        buf_minus = StringIO.StringIO()
+        mpimg.imsave(buf_minus, np.round(image_minus_i).astype(np.uint8), format='png')
+        buffers.append(buf_minus)
+
+    # Submit the perturbed images
+    num_queries = num_groups * 2
+    inputs = [ClImage(file_obj=buf) for buf in buffers]
+    result = model.predict(inputs)
+
+    for buf in buffers:
+        buf.close()
+
+    # Extract the output
+    pred_plus_batch = np.zeros((num_groups, num_classes))
+    for pred_plus, output in zip(pred_plus_batch, result['outputs'][0:num_queries:2]):
+        dict_reader(output['data']['concepts'], pred_plus)
+    pred_minus_batch = np.zeros((num_groups, num_classes))
+    for pred_minus, output in zip(pred_minus_batch, result['outputs'][1:num_queries:2]):
+        dict_reader(output['data']['concepts'], pred_minus)
+
+    # Do the actual finite difference gradient estimate
+    group_grad_est = CW_est_batch(pred_plus_batch, pred_minus_batch, curr_target, max_index)
+    grad_est = np.zeros((IMAGE_ROWS, IMAGE_COLS, NUM_CHANNELS))
+    grad_est_flat = grad_est.reshape(-1)
+    for indices, single_grad_est in zip(group_indices, group_grad_est):
+        grad_est_flat[indices] = single_grad_est
             
     # Getting gradient of the loss
 #     loss_grad = -1.0 * grad_est/p_t
@@ -183,11 +179,11 @@ for i in range(args.num_iter):
     image_adv = temp_sample - alpha * normed_loss_grad
     r = np.clip(image_adv-curr_sample, -eps, eps)
     temp_sample = np.clip(curr_sample + r, CLIP_MIN, CLIP_MAX)
-    temp_image = args.target_image_name+'temp.jpg'
-    mpimg.imsave(temp_image, temp_sample/255)
+    temp_image = args.target_image_name+'temp.png'
+    mpimg.imsave(temp_image, np.round(temp_sample).astype(np.uint8))
 
-x_adv = args.target_image_name+'_adv_'+str(args.eps)+'_'+str(args.num_iter)+'_'+str(args.delta)+'_'+str(args.group_size)+'.jpg'
-mpimg.imsave(x_adv, temp_sample/255)
+x_adv = args.target_image_name+'_adv_'+str(args.eps)+'_'+str(args.num_iter)+'_'+str(args.delta)+'_'+str(args.group_size)+'.png'
+mpimg.imsave(x_adv, np.round(temp_sample).astype(np.uint8))
 
 # Getting the norm of the perturbation
 perturb_norm = np.linalg.norm((image_adv-curr_sample).reshape(dim))
