@@ -70,17 +70,28 @@ def finite_diff_method(curr_sample, curr_target, p_t, max_index, U=None):
     # Submit the perturbed images
     num_queries = num_groups * 2
     inputs = [ClImage(file_obj=buf) for buf in buffers]
-    result = model.predict(inputs)
+    batch_size = 100
+    num_batches = int(num_queries/batch_size)
+    result = []
+    if num_batches>0:
+        for i in range(num_batches):
+            curr_input = inputs[i*batch_size:(i+1)*batch_size]
+            result.extend(model.predict(curr_input)['outputs'])
+        curr_input = inputs[num_batches*batch_size:]
+        result.extend(model.predict(curr_input)['outputs'])
+    else:
+        result.extend(model.predict(inputs)['outputs'])
+    # print(result)
 
     for buf in buffers:
         buf.close()
 
     # Extract the output
     pred_plus_batch = np.zeros((num_groups, num_classes))
-    for pred_plus, output in zip(pred_plus_batch, result['outputs'][0:num_queries:2]):
+    for pred_plus, output in zip(pred_plus_batch, result[0:num_queries:2]):
         dict_reader(output['data']['concepts'], pred_plus)
     pred_minus_batch = np.zeros((num_groups, num_classes))
-    for pred_minus, output in zip(pred_minus_batch, result['outputs'][1:num_queries:2]):
+    for pred_minus, output in zip(pred_minus_batch, result[1:num_queries:2]):
         dict_reader(output['data']['concepts'], pred_minus)
 
     # Do the actual finite difference gradient estimate
@@ -98,7 +109,7 @@ def finite_diff_method(curr_sample, curr_target, p_t, max_index, U=None):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("target_image_name", help="Image to misclassify")
-parser.add_argument("--target_model", type=str, default='nsfw-v1.0', 
+parser.add_argument("--target_model", type=str, default='moderation', 
                     help="target model for attack")
 parser.add_argument("--eps", type=int, default=16, 
                     help="perturbation magnitude to use")

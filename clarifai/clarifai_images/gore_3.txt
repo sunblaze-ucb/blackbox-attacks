@@ -23,3 +23,33 @@ Original prediction: [  6.36923300e-06   1.24392540e-04   1.13069220e-04   2.559
    9.99869500e-01] 
 Final prediction: [  4.62226740e-05   1.57259480e-04   1.03207730e-04   4.16668200e-04
    9.99723200e-01]
+eps: 16, num_iter: 5, group_size: 10000, delta: 0.01, model: moderation ---- success: 0.0 
+Original prediction: [  6.65055100e-11   2.29274120e-07   1.00873600e-06   1.62807960e-07
+   9.99998570e-01] 
+Final prediction: [  6.37327300e-11   2.07393700e-07   9.12974600e-07   1.58614470e-07
+   9.99998700e-01]
+eps: 16, num_iter: 5, group_size: 10000, delta: 1.0, model: moderation ---- success: 0.0 
+Original prediction: [  6.65055100e-11   2.29274120e-07   1.00873600e-06   1.62807960e-07
+   9.99998570e-01] 
+Final prediction: [  1.26169940e-08   2.85978010e-06   8.51228100e-06   1.77558730e-06
+   9.99986770e-01]
+eps: 16, num_iter: 5, group_size: 10000, delta: 0.01, model: moderation ---- success: 100.0 
+Original prediction: [  6.65055100e-11   2.29274120e-07   1.00873600e-06   1.62807960e-07
+   9.99998570e-01] 
+Final prediction: [  8.96887600e-01   6.43528700e-02   2.99272480e-02   8.46005000e-03
+   3.72283800e-04]
+eps: 16, num_iter: 5, group_size: 10000, delta: 0.01, model: moderation ---- success: 0.0 
+Original prediction: [  6.65055100e-11   2.29274120e-07   1.00873600e-06   1.62807960e-07
+   9.99998570e-01] 
+Final prediction: [  6.41441900e-11   2.07850080e-07   9.78390700e-07   1.64719640e-07
+   9.99998700e-01]
+eps: 16, num_iter: 5, group_size: 10000, delta: 1.0, model: moderation ---- success: 0.0 
+Original prediction: [  6.65055100e-11   2.29274120e-07   1.00873600e-06   1.62807960e-07
+   9.99998570e-01] 
+Final prediction: [  1.68470770e-08   6.42385840e-06   1.20015490e-05   2.29378840e-06
+   9.99979260e-01]
+eps: 16, num_iter: 5, group_size: 1000, delta: 1.0, model: moderation ---- success: 0.0 
+Original prediction: [  6.65055100e-11   2.29274120e-07   1.00873600e-06   1.62807960e-07
+   9.99998570e-01] 
+Final prediction: [  2.96784860e-04   6.06824900e-03   2.20032970e-03   1.98502630e-04
+   9.91236150e-01]
