@@ -40,7 +40,7 @@ galleries:
 
 All of the original images are either sample images from [Clarifai][clarifai] or were found on the internet under various Creative Commons licenses which allow non-commercial reuse.
 
-All adversarial images were generated using the Iterative Gradient Estimation attack with query reduction using random grouping. The number of iterations was set to 5 and the perturbation value to 16 for all images, except where otherwise indicated. The size of the random group was modified appropriately for each image to keep the number of queries low, while still allowing for the generation of adversarial images. In all image galleries, the original images are on the left, and the adversarially generated images are on the right.
+All adversarial images were generated using the Iterative Gradient Estimation attack with query reduction using random grouping. The number of iterations was set to 5 and the perturbation value to 16 for all images, except where otherwise indicated. The size of the random group was modified appropriately for each image to keep the number of queries low, while still allowing for the generation of adversarial images. In all image galleries, the original images appear first, immediately followed by their adversarial variants.
 
 
 ## Attacks on the Moderation model
@@ -61,7 +61,7 @@ The images below were originally classified as 'suggestive' by the Moderation mo
 
 
 ## Attacks on the NSFW classification model
-The [NSFW model][nsfw-api] hosted by Clarifai has just 2 classes: 'sfw' and 'nsfw'. The first image is classified as 'nsfw' with a confidence of 0.83 by the NSFW model while the second image is classified as 'nsfw' with a confidence of 0.85. The corresponding adversarial images are classifed as 'sfw' with confidences of 0.65 for the first image and 0.55 for the second image.
+The [NSFW model][nsfw-api] hosted by Clarifai has just 2 classes: 'sfw' and 'nsfw'. The first image (topmost) is classified as 'nsfw' with a confidence of 0.83 by the NSFW model while the second image (third from top) is classified as 'nsfw' with a confidence of 0.85. The corresponding adversarial images are classifed as 'sfw' with confidences of 0.65 for the first image (second from top) and 0.55 for the second image (bottom).
 
 {% include gallery.html  gallery=3 %}
 
