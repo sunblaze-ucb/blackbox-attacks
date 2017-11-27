@@ -34,7 +34,7 @@ galleries:
    # row two in gallery two
    -
      - { url: '/assets/nsfw-008.jpg', alt: 'nsfw 2'}
-     - { url: '/assets/nsfw-008_adv_16_5_1.0_5000.png', alt: 'nsfw 2 adv'}
+     - { url: '/assets/nsfw-008_adv_16_5_4.0_10000.png', alt: 'nsfw 2 adv'}
 
 ---
 
@@ -53,7 +53,7 @@ The images on the left were both originally classified as 'gore' by the Moderati
 
 ### Suggestive images
 
-The images below were originally classified as 'suggestive' by the Moderation model with a confidence of 0.72 (top, first image)and 0.99 (bottom, left image) respectively. The corresponding adversarial images (top, second image and bottom, right image) were classified as safe with a confidence of 0.58 and 0.79 respectively. The first adversarial image needed 810 queries while the second needed 1150 queries. These images took around 5 minutes each to generate.
+The images below were originally classified as 'suggestive' by the Moderation model with a confidence of 0.72 (top, first image)and 0.99 (bottom, left image) respectively. The corresponding adversarial images (top, second image and bottom, right image) were classified as safe with a confidence of 0.58 and 0.79 respectively. The first adversarial image needed 810 queries while the second needed 1150 queries. These images took around 10 minutes each to generate.
 
 {% include gallery.html  gallery=2 %}
 
@@ -61,7 +61,7 @@ The images below were originally classified as 'suggestive' by the Moderation mo
 
 
 ## Attacks on the NSFW classification model
-The [NSFW model][nsfw-api] hosted by Clarifai has just 2 classes: 'sfw' and 'nsfw'. The first image (topmost) is classified as 'nsfw' with a confidence of 0.83 by the NSFW model while the second image (third from top) is classified as 'nsfw' with a confidence of 0.85. The corresponding adversarial images are classifed as 'sfw' with confidences of 0.65 for the first image (second from top) and 0.55 for the second image (bottom).
+The [NSFW model][nsfw-api] hosted by Clarifai has just 2 classes: 'sfw' and 'nsfw'. The first image (topmost) is classified as 'nsfw' with a confidence of 0.83 by the NSFW model while the second image (third from top) is classified as 'nsfw' with a confidence of 0.85. The corresponding adversarial images are classifed as 'sfw' with confidences of 0.65 for the first image (second from top) and 0.59 for the second image (bottom). The adversarial images needed 1400 and 810 queries respectively. These images also took about 10 minutes to generate.
 
 {% include gallery.html  gallery=3 %}
 
