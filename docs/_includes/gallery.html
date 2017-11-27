@@ -1,0 +1,21 @@
+{% comment %}-----------------
+  - This page receives a gallery index (include.gallery)
+  - It then assign the gallery[include.gallery] to the rows variable
+%}-----------------{% endcomment %}
+{% assign rows = page.galleries[include.gallery] %}
+
+{% comment %}%}-----------------
+  We now loop over rows
+%}-----------------{% endcomment %}
+{% for row in rows %}
+<div class="row">
+    {% comment %}%}-----------------
+      and then loop over images in row
+    %}-----------------{% endcomment %}
+     <p>
+    {% for img in row %}
+		<img src="{{ site.baseurl }}{{ img.url }}" alt="{{ img.alt }}"/>
+    {% endfor %}
+    </p>
+</div>
+{% endfor %}
