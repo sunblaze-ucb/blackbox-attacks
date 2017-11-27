@@ -70,7 +70,7 @@ def finite_diff_method(curr_sample, curr_target, p_t, max_index, U=None):
     # Submit the perturbed images
     num_queries = num_groups * 2
     inputs = [ClImage(file_obj=buf) for buf in buffers]
-    batch_size = 100
+    batch_size = 30
     num_batches = int(num_queries/batch_size)
     result = []
     if num_batches>0:
@@ -117,7 +117,7 @@ parser.add_argument("--num_iter", type=int, default=5,
                     help="number of iterations to run")
 parser.add_argument("--group_size", type=int, default=10000,
                     help="Number of features to group together")
-parser.add_argument("--delta", type=float, default=0.01,
+parser.add_argument("--delta", type=float, default=1.0,
                     help="local perturbation")
 
 args = parser.parse_args()
@@ -131,7 +131,11 @@ success = 0
 avg_l2_perturb = 0
 curr_image=args.target_image_name+'.jpg'
 curr_sample = np.array(mpimg.imread(curr_image),dtype=float)
-curr_sample=curr_sample[:,:,:3]
+array_shape = curr_sample.shape
+if len(curr_sample.shape)>2:
+    curr_sample=curr_sample[:,:,:3]
+else:
+    curr_sample = curr_sample.reshape((array_shape[0],array_shape[1],1))
 
 BATCH_SIZE=1
 IMAGE_ROWS=curr_sample.shape[0]
@@ -154,6 +158,7 @@ curr_prediction = np.zeros((num_classes))
 image_cl=ClImage(file_obj=open(curr_image,'rb'))
 curr_predict_dict = model.predict([image_cl])['outputs'][0]['data']['concepts']
 curr_prediction = dict_reader(curr_predict_dict, curr_prediction)
+orig_index = np.argmax(curr_prediction)
 print("Original prediction: {}".format(curr_prediction))
 
 temp_sample = curr_sample
@@ -168,13 +173,13 @@ for i in range(args.num_iter):
     temp_prediction = dict_reader(temp_predict_dict, temp_prediction)
     temp_logits = np.log(temp_prediction)
     max_index = np.argmax(temp_prediction)
-    print('Max_index: {}'.format(max_index))
-    loss_value = temp_logits[max_index] - temp_logits[curr_target]
+    loss_value = temp_logits[orig_index] - temp_logits[curr_target]
     print('Current loss value: {}'.format(loss_value))
+    print('Current prediction: {}'.format(temp_prediction))
 
     p_t = temp_prediction[curr_target]
 
-    loss_grad = finite_diff_method(temp_sample,curr_target, p_t, max_index)
+    loss_grad = finite_diff_method(temp_sample, curr_target, p_t, max_index)
     # np.save('loss_grad_drugs.npy',loss_grad)
     # loss_grad = np.load('loss_grad_drugs.npy')
 
@@ -206,9 +211,15 @@ image_adv_cl=ClImage(file_obj=open(x_adv,'rb'))
 adv_prediction = np.zeros((num_classes))
 adv_predict_dict = model.predict([image_adv_cl])['outputs'][0]['data']['concepts']
 adv_prediction = dict_reader(adv_predict_dict, adv_prediction)
+adv_logits = np.log(adv_prediction)
+loss_value = adv_logits[orig_index] - adv_logits[curr_target]
 success += np.sum(np.argmax(adv_prediction) == curr_target)
 
 success = 100.0 * float(success)
+
+print('Final loss: {}'.format(loss_value))
+print('Final prediction: {}'.format(adv_prediction))
+print('Success: {}'.format(success))
 
 ofile=open(args.target_image_name+'.txt','a')
 
