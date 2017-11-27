@@ -31,10 +31,26 @@ galleries:
    -
      - { url: '/assets/nsfw-007.jpg', alt: 'nsfw 1'}
      - { url: '/assets/nsfw-007_adv_16_5_1.0_1000.png', alt: 'nsfw 1 adv'}
-   # row two in gallery two
+   # row two in gallery three
    -
      - { url: '/assets/nsfw-008.jpg', alt: 'nsfw 2'}
      - { url: '/assets/nsfw-008_adv_16_5_4.0_10000.png', alt: 'nsfw 2 adv'}
+ 4:
+   -
+     - { url: '/assets/moderation-001-small.jpg', alt: 'drug 1'}
+     - { url: '/assets/moderation-001-small_adv_16_5_1.0_7670.png', alt: 'drug 1 adv'}
+   -
+     - { url: '/assets/Chunkyno3-small.jpg', alt: 'drug 2'}
+     - { url: '/assets/Chunkyno3-small_adv_32_5_1.0_10047.png', alt: 'drug 2 adv'}
+   -
+     - { url: '/assets/CocaineUkelele-Opened-small.jpg', alt: 'drug 3'}
+     - { url: '/assets/CocaineUkelele-Opened-small_adv_16_5_1.0_6997.png', alt: 'drug 3 adv'}
+   -
+     - { url: '/assets/Crack_Crack-small.jpg', alt: 'drug 3'}
+     - { url: '/assets/Crack_Crack-small_adv_16_5_1.0_9464.png', alt: 'drug 3 adv'}
+   -
+     - { url: '/assets/Heroin-small.jpg', alt: 'drug 4'}
+     - { url: '/assets/Heroin-small_adv_32_5_1.0_8746.png', alt: 'drug 4 adv'}
 
 ---
 
@@ -59,6 +75,11 @@ The images below were originally classified as 'suggestive' by the Moderation mo
 
 ### Images of drugs
 
+The images on the left below were originally classified as 'drug' by the Moderation model with confidences (from top to bottom) of 1.000, 0.999, 0.987, 0.586, and 1.000.
+The adversarial images on the right were classified (from top to bottom) as safe (with confidence 0.769), safe (0.549), explicit (0.525), and safe (0.759).
+The adversarial images were generated with 197 queries each.
+
+{% include gallery.html gallery=4 %}
 
 ## Attacks on the NSFW classification model
 The [NSFW model][nsfw-api] hosted by Clarifai has just 2 classes: 'sfw' and 'nsfw'. The first image (topmost) is classified as 'nsfw' with a confidence of 0.83 by the NSFW model while the second image (third from top) is classified as 'nsfw' with a confidence of 0.85. The corresponding adversarial images are classifed as 'sfw' with confidences of 0.65 for the first image (second from top) and 0.59 for the second image (bottom). The adversarial images needed 1400 and 810 queries respectively. These images also took about 10 minutes to generate.
