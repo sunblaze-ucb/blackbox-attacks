@@ -45,6 +45,10 @@ python train_adv.py models/modelA_adv --type=0 --iter=1 --num_epochs=64
 ```
 Note that this form of training needs a much higher number of epochs for the training to converge. Iterative adversarial samples are generated using 40 steps of magnitude 0.01 each by default. This can be changed in the `train_adv.py` script. The maximum perturbation magnitude is still set to 0.3. To train using only the adversarial loss, set the `--ben` flag to 0. 
 
+### PRETRAINED *CIFAR-10* MODELS
+CIFAR-10 models are trained using the same techniques.
+We have uploaded a set of [pretrained weights](https://berkeley.box.com/s/obtatlkt9tppvemb3ufxpxt3a35n0p0l).
+
 ### ATTACKING _MNIST_ MODELS
 
 #### BASELINE ATTACKS
@@ -53,7 +57,6 @@ In order to carry out an _untargeted Difference of Means_ attack (on Model A for
 python baseline_attacks.py models/modelA
 ``` 
 This will run the attack for a pre-specified list of perturbation values. For attacks constrained using the *infinity-norm*, the maximum perturbation value is 0.5 and for attacks constrained using the *2-norm*, it is 9.0. To carry out a _targeted Difference of Means_ attack, set `--targeted-flag=1`.
-
 
 
 #### TRANSFERABILITY-BASED ATTACKS
