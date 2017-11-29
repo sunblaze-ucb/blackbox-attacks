@@ -81,8 +81,6 @@ def tf_train(x, y, model, X_train, Y_train, generator, x_advs=None, benign = Non
         l2 = tf.constant(0)
         loss = l1
 
-    #return
-
     optimizer = tf.train.AdamOptimizer().minimize(loss)
 
     saver = tf.train.Saver(set(tf.global_variables()) - old_vars)
