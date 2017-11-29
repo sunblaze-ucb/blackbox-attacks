@@ -30,6 +30,10 @@ python train.py models/modelD --type=3 --num_epochs=6
 
 #### ITERATIVE ADVERSARIAL TRAINING
 
+### PRETRAINED *CIFAR-10* MODELS
+CIFAR-10 models are trained using the same techniques.
+We have uploaded a set of [pretrained weights](https://berkeley.box.com/s/obtatlkt9tppvemb3ufxpxt3a35n0p0l).
+
 ### BASELINE ATTACKS
 
 ### TRANSFERABILITY-BASED ATTACKS
