@@ -114,6 +114,49 @@ def overall_grad_est(j, logits, prediction, x, curr_sample, curr_target,
 
     return single_grad_est
 
+def spsa(prediction, logits, x, curr_sample, curr_target, p_t, dim):
+    grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS,
+                         FLAGS.NUM_CHANNELS))
+    logits_np = K.get_session().run([logits], feed_dict={x: curr_sample})[0]
+    perturb_vec = np.random.normal(size=dim*BATCH_SIZE).reshape((BATCH_SIZE, dim))
+    for i in range(BATCH_SIZE):
+        perturb_vec[i,:] = perturb_vec[i,:]/np.linalg.norm(perturb_vec[i,:])
+    # perturb_vec = perturb_vec/np.linalg.norm(perturb_vec)
+    perturb_vec = perturb_vec.reshape((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+
+    x_plus_i = np.clip(curr_sample + args.delta * perturb_vec, CLIP_MIN, CLIP_MAX)
+    x_minus_i = np.clip(curr_sample - args.delta * perturb_vec, CLIP_MIN, CLIP_MAX)
+
+    if args.loss_type == 'cw':
+        logit_t_grad_est, logit_max_grad_est = CW_est(logits, x, x_plus_i,
+                                        x_minus_i, curr_sample, curr_target)
+        if '_un' in args.method:
+            single_grad_est = logit_t_grad_est - logit_max_grad_est
+        else:
+            single_grad_est = logit_max_grad_est - logit_t_grad_est
+    elif args.loss_type == 'xent':
+        single_grad_est = xent_est(prediction, x, x_plus_i, x_minus_i, curr_target)
+
+    for i in range(BATCH_SIZE):
+        grad_est[i] = single_grad_est[i]/perturb_vec[i]
+    # Getting gradient of the loss
+    if args.loss_type == 'xent':
+        loss_grad = -1.0 * grad_est/p_t[:, None, None, None]
+    elif args.loss_type == 'cw':
+        logits_np_t = logits_np[np.arange(BATCH_SIZE), list(curr_target)].reshape(BATCH_SIZE)
+        logits_np[np.arange(BATCH_SIZE), list(curr_target)] = -1e4
+        max_indices = np.argmax(logits_np, 1)
+        logits_np_max = logits_np[np.arange(BATCH_SIZE), list(max_indices)].reshape(BATCH_SIZE)
+        logit_diff = logits_np_t - logits_np_max
+        if '_un' in args.method:
+            zero_indices = np.where(logit_diff + args.conf < 0.0)
+        else:
+            zero_indices = np.where(-logit_diff + args.conf < 0.0)
+        grad_est[zero_indices[0]] = np.zeros((len(zero_indices), FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+        loss_grad = grad_est
+
+    return loss_grad
+
 
 def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim, U=None):
     grad_est = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS,
@@ -285,8 +328,10 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
             if 'query_based' in args.method:
                 loss_grad = finite_diff_method(prediction, logits, x, curr_sample,
                                             curr_target, p_t, dim, U)
-            elif 'one_shot' in args.method:
-                loss_grad = one_shot_method(prediction, x, curr_sample, curr_target, p_t)
+            elif 'spsa' in args.method:
+                loss_grad = spsa(prediction, logits, x, curr_sample,
+                                            curr_target, p_t, dim)
+                # print loss_grad.shape
 
             # Getting signed gradient of loss
             if args.norm == 'linf':
@@ -307,6 +352,14 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
             r = x_adv-curr_sample_ini
             r = np.clip(r, -eps, eps)
             curr_sample = curr_sample_ini + r
+
+            logits_curr = K.get_session().run([logits], feed_dict={x: curr_sample})[0]
+            logits_curr_t = logits_curr[np.arange(BATCH_SIZE), list(curr_target)].reshape(BATCH_SIZE)
+            logits_curr[np.arange(BATCH_SIZE), list(curr_target)] = -1e4
+            max_indices = np.argmax(logits_curr, 1)
+            logits_curr_max = logits_curr[np.arange(BATCH_SIZE), list(max_indices)].reshape(BATCH_SIZE)
+            loss = logits_curr_t - logits_curr_max
+            print loss
 
         x_adv = np.clip(curr_sample, 0, 1)
         # Getting the norm of the perturbation
@@ -431,6 +484,7 @@ def white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_i
 
     X_test_ini_mod = X_test_ini[:BATCH_SIZE*BATCH_EVAL_NUM]
     targets_cat_mod = targets_cat[:BATCH_SIZE*BATCH_EVAL_NUM]
+    targets_mod = targets[:BATCH_SIZE*BATCH_EVAL_NUM]
 
     X_adv_t = np.zeros_like(X_test_ini_mod)
 
@@ -448,7 +502,8 @@ def white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_i
 
     adv_pred_np = K.get_session().run([prediction], feed_dict={x: X_adv_t})[0]
 
-    _, _, white_box_error = tf_test_error_rate(target_model, x, X_adv_t, targets_cat_mod)
+    # _, _, white_box_error = tf_test_error_rate(target_model, x, X_adv_t, targets_cat_mod)
+    white_box_error = 100.0 * np.sum(np.argmax(adv_pred_np,1) != targets_mod) / adv_pred_np.shape[0]
     if '_un' not in args.method:
         white_box_error = 100.0 - white_box_error
 
@@ -526,7 +581,7 @@ def main(target_model_name, target=None):
 
     for eps in eps_list:
         if '_iter' in args.method:
-            white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim, args.beta)
+            # white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim, args.beta)
             estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logits, eps, dim, args.beta)
         else:
             white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim)
@@ -536,13 +591,13 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("target_model", help="target model for attack")
-    parser.add_argument("--method", choices=['query_based', 'one_shot',
-                        'query_based_un', 'one_shot_un', 'query_based_un_iter','query_based_iter'], default='query_based_un')
+    parser.add_argument("--method", choices=['query_based', 'spsa_iter',
+                        'query_based_un', 'spsa_un_iter', 'query_based_un_iter','query_based_iter'], default='query_based_un')
     parser.add_argument("--delta", type=float, default=0.01,
                         help="local perturbation")
     parser.add_argument("--norm", type=str, default='linf',
                             help="Norm to use for attack")
-    parser.add_argument("--loss_type", type=str, default='xent',
+    parser.add_argument("--loss_type", type=str, default='cw',
                             help="Choosing which type of loss to use")
     parser.add_argument("--conf", type=float, default=0.0,
                                 help="Strength of CW sample")
@@ -552,9 +607,9 @@ if __name__ == "__main__":
                             help="Number of features to group together")
     parser.add_argument("--num_comp", type=int, default=784,
                             help="Number of pca components")
-    parser.add_argument("--num_iter", type=int, default=40,
+    parser.add_argument("--num_iter", type=int, default=4000,
                             help="Number of iterations")
-    parser.add_argument("--beta", type=int, default=0.01,
+    parser.add_argument("--beta", type=int, default=0.0001,
                             help="Step size per iteration")
 
     args = parser.parse_args()
