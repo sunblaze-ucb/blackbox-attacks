@@ -359,7 +359,7 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
             max_indices = np.argmax(logits_curr, 1)
             logits_curr_max = logits_curr[np.arange(BATCH_SIZE), list(max_indices)].reshape(BATCH_SIZE)
             loss = logits_curr_t - logits_curr_max
-            print loss
+            # print loss
 
         x_adv = np.clip(curr_sample, 0, 1)
         # Getting the norm of the perturbation
@@ -609,7 +609,7 @@ if __name__ == "__main__":
                             help="Number of pca components")
     parser.add_argument("--num_iter", type=int, default=4000,
                             help="Number of iterations")
-    parser.add_argument("--beta", type=int, default=0.0001,
+    parser.add_argument("--beta", type=int, default=0.01,
                             help="Step size per iteration")
 
     args = parser.parse_args()
@@ -627,7 +627,7 @@ if __name__ == "__main__":
     if '_iter' in args.method:
         BATCH_EVAL_NUM = 10
     else:
-        BATCH_EVAL_NUM = 1
+        BATCH_EVAL_NUM = 10
 
     if RANDOM is False:
         for i in range(FLAGS.NUM_CLASSES):
