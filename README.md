@@ -1,10 +1,10 @@
 # Query-based black-box attacks
 
-This repository contains code to reproduce results from the paper:
+This repository contains code to reproduce results from the papers:
 
 **Exploring the Space of Black-box Attacks on Deep Neural Networks** <br>
 *Arjun Nitin Bhagoji, Warren He, Bo Li and Dawn Song* <br>
-ArXiv report:
+ArXiv report: https://arxiv.org/abs/1712.09491
 
 #### REQUIREMENTS
 
@@ -58,8 +58,11 @@ python baseline_attacks.py models/modelA
 ``` 
 This will run the attack for a pre-specified list of perturbation values. For attacks constrained using the *infinity-norm*, the maximum perturbation value is 0.5 and for attacks constrained using the *2-norm*, it is 9.0. To carry out a _targeted Difference of Means_ attack, set `--targeted-flag=1`.
 
-
 #### TRANSFERABILITY-BASED ATTACKS
+To carry out a transferability-based attack on a single model (say Model B) using FGS adversarial examples generated for another single model (say Model A), run the `ensemble_attack.py` script as follows:
+```
+python transfer_attack_w_ensemble.py fgs models/modelA --target_model=models/modelB
+```
 
 #### QUERY-BASED ATTACKS
 
