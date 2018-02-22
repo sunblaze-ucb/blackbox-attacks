@@ -167,6 +167,7 @@ def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim
         num_groups = dim / args.group_size
     elif PCA_FLAG == True:
         num_groups = args.num_comp
+        random_indices = None
 
     if PARALLEL_FLAG == True:
 
@@ -212,6 +213,8 @@ def finite_diff_method(prediction, logits, x, curr_sample, curr_target, p_t, dim
                 for i in range(len(curr_indices)):
                     grad_est[:, row[i], col[i]] = single_grad_est.reshape((BATCH_SIZE,1))
             elif PCA_FLAG == True:
+                basis_vec = np.zeros((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
+                basis_vec[:] = U[:,j].reshape((1, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, FLAGS.NUM_CHANNELS))
                 grad_est += basis_vec*single_grad_est[:,None,None,None]
 
     # Getting gradient of the loss
@@ -581,7 +584,7 @@ def main(target_model_name, target=None):
 
     for eps in eps_list:
         if '_iter' in args.method:
-            # white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim, args.beta)
+            white_box_fgsm_iter(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim, args.beta)
             estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logits, eps, dim, args.beta)
         else:
             white_box_fgsm(prediction, target_model, x, logits, y, X_test, X_test_ini, targets, targets_cat, eps, dim)
@@ -592,7 +595,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("target_model", help="target model for attack")
     parser.add_argument("--method", choices=['query_based', 'spsa_iter',
-                        'query_based_un', 'spsa_un_iter', 'query_based_un_iter','query_based_iter'], default='query_based_un')
+                        'query_based_un', 'spsa_un_iter', 'query_based_un_iter','query_based_iter'], default='query_based')
     parser.add_argument("--delta", type=float, default=0.01,
                         help="local perturbation")
     parser.add_argument("--norm", type=str, default='linf',
@@ -607,7 +610,7 @@ if __name__ == "__main__":
                             help="Number of features to group together")
     parser.add_argument("--num_comp", type=int, default=784,
                             help="Number of pca components")
-    parser.add_argument("--num_iter", type=int, default=4000,
+    parser.add_argument("--num_iter", type=int, default=40,
                             help="Number of iterations")
     parser.add_argument("--beta", type=int, default=0.01,
                             help="Step size per iteration")

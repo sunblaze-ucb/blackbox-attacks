@@ -15,6 +15,8 @@ from keras.utils import np_utils
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
+SAVE_FLAG = False
+
 def gen_grad_cw(x, logits, y):
     real = tf.reduce_sum(y*logits[0], 1)
     other = tf.reduce_max((1-y)*logits[0] - (y*10000), 1)
@@ -29,7 +31,6 @@ def gen_grad_cw(x, logits, y):
 
 
 def main(attack, src_model_names, target_model_name):
-    script_dir = os.path.dirname(__file__)
     np.random.seed(0)
     tf.set_random_seed(0)
 
@@ -70,20 +71,25 @@ def main(attack, src_model_names, target_model_name):
         print '{}: {:.1f}'.format(basename(target_model_name), err)
 
         return        
+    
     if args.targeted_flag == 1:
-        targets = []
-        allowed_targets = list(range(FLAGS.NUM_CLASSES))
-        for i in range(len(Y_test)):
-            allowed_targets.remove(Y_test_uncat[i])
-            targets.append(np.random.choice(allowed_targets))
+        pickle_name =  attack + '_' + src_model_name_joint+'_'+'_'+args.loss_type+'_targets.p'
+        if os.path.exists(pickle_name):
+            targets = pickle.load(open(pickle_name,'rb'))
+        else:
+            targets = []
             allowed_targets = list(range(FLAGS.NUM_CLASSES))
-        # targets = np.random.randint(10, size = BATCH_SIZE*BATCH_EVAL_NUM)
-        targets = np.array(targets)
-        print targets
-        targets_cat = np_utils.to_categorical(targets, FLAGS.NUM_CLASSES).astype(np.float32)
-        Y_test = targets_cat
-        pickle_name = 'adv_samples/' + attack + '/' + src_model_name_joint+'_'+'_'+args.loss_type+'_targets.p'
-        pickle.dump(Y_test, open(pickle_name,'wb'))
+            for i in range(len(Y_test)):
+                allowed_targets.remove(Y_test_uncat[i])
+                targets.append(np.random.choice(allowed_targets))
+                allowed_targets = list(range(FLAGS.NUM_CLASSES))
+            # targets = np.random.randint(10, size = BATCH_SIZE*BATCH_EVAL_NUM)
+            targets = np.array(targets)
+            print targets
+            targets_cat = np_utils.to_categorical(targets, FLAGS.NUM_CLASSES).astype(np.float32)
+            Y_test = targets_cat
+            if SAVE_FLAG == True:
+                pickle.dump(Y_test, open(pickle_name,'wb'))
     
     
     # take the random step in the RAND+FGSM
@@ -104,10 +110,6 @@ def main(attack, src_model_names, target_model_name):
         grad = gen_grad_cw(x, logits, y)
     if args.targeted_flag == 1:
         grad = -1.0 * grad
-
-    ofile = open('output_data/blind_transfer/'+attack+'_'+src_model_name_joint+'_to_'+basename(target_model_name)+'_'+args.loss_type+'.txt', 'a')
-    if args.targeted_flag==1:
-           ofile =open('output_data/blind_transfer/'+attack+'_'+src_model_name_joint+'_to_'+basename(target_model_name)+'_'+args.loss_type+'_t.txt', 'a') 
 
     if args.norm == 'linf':
         # eps_list = list(np.linspace(0.025, 0.1, 4))
@@ -165,19 +167,14 @@ def main(attack, src_model_names, target_model_name):
             if os.path.exists(pickle_name) and attack == "CW_ens":
                 print 'Loading adversarial samples'
                 X_adv = pickle.load(open(pickle_name,'rb'))
-                ofile = open('output_data/'+attack+'_attack_success.txt','a')
 
                 for (name, src_model) in zip(src_model_names, src_models):
                     preds_adv, _, err = tf_test_error_rate(src_model, x, X_adv, Y_test)
                     print '{}->{}: {:.1f}'.format(src_model_name_joint, basename(name), err)
-                    ofile.write('{}->{}: {:.1f} \n'.format(src_model_name_joint, basename(name), err))
-                    # pickle_name = attack + '_adv_samples/' + basename(src_model_name)+'_labels_'+str(args.eps)+'.p'
-                    # pickle.dump(preds_adv, open(pickle_name, 'wb'))
+
                 preds_adv,_,err = tf_test_error_rate(target_model, x, X_adv, Y_test)
                 print '{}->{}: {:.1f}'.format(src_model_name_joint, basename(target_model_name), err)
-                ofile.write('{}->{}: {:.1f} \n'.format(src_model_name_joint, basename(target_model_name), err))
 
-                ofile.close()
                 return
 
             X_test = X_test[0:l]
@@ -194,26 +191,28 @@ def main(attack, src_model_names, target_model_name):
 
             pickle.dump(X_adv, open(pickle_name,'wb'))
 
-            ofile = open('output_data/'+attack+'_attack_success.txt','a')
-
             preds, orig, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
             print '{}->{}: {:.1f}'.format(src_model_name_joint, basename(target_model_name), err)
-            ofile.write('{}->{}: {:.1f} \n'.format(src_model_name_joint, basename(target_model_name), err))
             for (name, src_model) in zip(src_model_names, src_models):
                 pres, _, err = tf_test_error_rate(src_model, x, X_adv, Y_test)
                 print '{}->{}: {:.1f}'.format(src_model_name_joint, basename(name), err)
-                ofile.write('{}->{}: {:.1f} \n'.format(src_model_name_joint, basename(name), err))
 
-            ofile.close()
             return
 
-        X_adv = batch_eval([x, y], [adv_x], [X_test, Y_test])[0]
-        avg_l2_perturb = np.mean(np.linalg.norm((X_adv-X_test).reshape(len(X_test),dim),axis=1))
-
-        pickle_name = 'adv_samples/' + attack + '/' + src_model_name_joint+'_'+'_'+args.loss_type+'_'+str(eps)+'_adv.p'
+        pickle_name = attack + '_' + src_model_name_joint+'_'+args.loss_type+'_'+str(eps)+'_adv.p'
         if args.targeted_flag == 1:
-            pickle_name = 'adv_samples/' + attack + '/' + src_model_name_joint+'_'+'_'+args.loss_type+'_'+str(eps)+'_adv_t.p'
-        pickle.dump(X_adv, open(pickle_name,'wb'))
+            pickle_name = attack + '_' + src_model_name_joint+'_'+args.loss_type+'_'+str(eps)+'_adv_t.p'
+
+        if os.path.exists(pickle_name):
+            print 'Loading adversarial samples'
+            X_adv = pickle.load(open(pickle_name,'rb'))
+        else:
+            print 'Generating adversarial samples'
+            X_adv = batch_eval([x, y], [adv_x], [X_test, Y_test])[0]
+            if SAVE_FLAG == True:
+                pickle.dump(X_adv, open(pickle_name,'wb'))
+
+        avg_l2_perturb = np.mean(np.linalg.norm((X_adv-X_test).reshape(len(X_test),dim),axis=1))
 
         # white-box attack
         l = len(X_adv)
@@ -229,8 +228,6 @@ def main(attack, src_model_names, target_model_name):
         if args.targeted_flag==1:
             err = 100.0 - err
         print '{}->{}: {:.1f}, {}, {} {}'.format(src_model_name_joint, basename(target_model_name), err, avg_l2_perturb, eps, attack)
-        ofile.write('{} {:.2f} {} \n'.format(eps, err, avg_l2_perturb))
-    ofile.close()
 
 if __name__ == "__main__":
     import argparse

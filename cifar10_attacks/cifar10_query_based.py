@@ -22,7 +22,6 @@ RANDOM = True
 BATCH_SIZE = 100
 CLIP_MIN = 0.0
 CLIP_MAX = 255.0
-PCA_FLAG = False
 
 def wb_write_out(eps, white_box_success, wb_norm):
     if RANDOM is False:
@@ -453,12 +452,12 @@ parser.add_argument("--img_source", help="source of images",
 parser.add_argument("--label_source", help="source of labels",
                     default='test_labels.npy')
 parser.add_argument("--method", choices=['query_based', 'one_shot',
-                    'query_based_un', 'one_shot_un','query_based_un_iter','query_based_iter'], default='query_based_un')
+                    'query_based_un', 'one_shot_un','query_based_un_iter','query_based_iter'], default='query_based')
 parser.add_argument("--delta", type=float, default=0.01,
                     help="local perturbation")
 parser.add_argument("--norm", type=str, default='linf',
                         help="Norm to use for attack")
-parser.add_argument("--loss_type", type=str, default='xent',
+parser.add_argument("--loss_type", type=str, default='cw',
                         help="Choosing which type of loss to use")
 parser.add_argument("--conf", type=float, default=0.0,
                             help="Strength of CW sample")
@@ -477,13 +476,14 @@ args = parser.parse_args()
 
 if '_un' in args.method:
     RANDOM = True
+PCA_FLAG=False
 if args.num_comp != 3072:
     PCA_FLAG=True
 
 if '_iter' in args.method:
     BATCH_EVAL_NUM = 10
 else:
-    BATCH_EVAL_NUM = 1
+    BATCH_EVAL_NUM = 10
 
 target_model_name = args.ckpt_dir
 
