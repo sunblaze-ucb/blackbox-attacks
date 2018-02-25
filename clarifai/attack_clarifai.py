@@ -81,7 +81,6 @@ def finite_diff_method(curr_sample, curr_target, p_t, max_index, U=None):
         result.extend(model.predict(curr_input)['outputs'])
     else:
         result.extend(model.predict(inputs)['outputs'])
-    # print(result)
 
     for buf in buffers:
         buf.close()
@@ -122,7 +121,7 @@ parser.add_argument("--delta", type=float, default=1.0,
 
 args = parser.parse_args()
 
-app = ClarifaiApp(api_key='b9b1dc3d4d2f45f5a07978674eab670e')
+app = ClarifaiApp()
 
 model = app.models.get(args.target_model)
 
@@ -180,8 +179,6 @@ for i in range(args.num_iter):
     p_t = temp_prediction[curr_target]
 
     loss_grad = finite_diff_method(temp_sample, curr_target, p_t, max_index)
-    # np.save('loss_grad_drugs.npy',loss_grad)
-    # loss_grad = np.load('loss_grad_drugs.npy')
 
     # Getting signed gradient of loss
     if norm == 'linf':

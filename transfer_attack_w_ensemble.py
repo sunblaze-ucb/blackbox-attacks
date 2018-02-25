@@ -59,15 +59,16 @@ def main(attack, src_model_names, target_model_name):
         src_model_name_joint += basename(src_model_names[i])
 
     # model(s) to target
-    target_model = load_model(target_model_name)
+    if target_model_name is not None:
+        target_model = load_model(target_model_name)
 
     # simply compute test error
     if attack == "test":
         for (name, src_model) in zip(src_model_names, src_models):
             _, _, err = tf_test_error_rate(src_model, x, X_test, Y_test)
             print '{}: {:.1f}'.format(basename(name), err)
-
-        _,_,err = tf_test_error_rate(target_model, x, X_test, Y_test)
+        if target_model_name is not None:
+            _, _,err = tf_test_error_rate(target_model, x, X_test, Y_test)
         print '{}: {:.1f}'.format(basename(target_model_name), err)
 
         return        
@@ -111,19 +112,6 @@ def main(attack, src_model_names, target_model_name):
     if args.targeted_flag == 1:
         grad = -1.0 * grad
 
-    if args.norm == 'linf':
-        # eps_list = list(np.linspace(0.025, 0.1, 4))
-        # eps_list.extend(np.linspace(0.15, 0.5, 8))
-        eps_list = [0.3]
-        if attack == "ifgs":
-            eps_list = [0.3]
-    elif args.norm == 'l2':
-        eps_list = list(np.linspace(0.0, 2.0, 5))
-        eps_list.extend(np.linspace(2.5, 9.0, 14))
-        # eps_list = [5.0]
-    print(eps_list)
-
-
     for eps in eps_list:
         # FGSM and RAND+FGSM one-shot attack
         if attack in ["fgs", "rand_fgs"] and args.norm == 'linf':
@@ -161,7 +149,7 @@ def main(attack, src_model_names, target_model_name):
 
         if attack == "CW_ens":
             l = 1000
-            pickle_name = 'adv_samples/' + attack + '/' + src_model_name_joint+'_'+str(args.eps)+'_adv.p'
+            pickle_name = attack + '_' + src_model_name_joint+'_'+str(args.eps)+'_adv.p'
             print(pickle_name)
             Y_test = Y_test[0:l]
             if os.path.exists(pickle_name) and attack == "CW_ens":
@@ -189,13 +177,17 @@ def main(attack, src_model_names, target_model_name):
             time2 = time()
             print("Run with Adam took {}s".format(time2-time1))
 
-            pickle.dump(X_adv, open(pickle_name,'wb'))
+            if SAVE_FLAG == True:
+                pickle.dump(X_adv, open(pickle_name,'wb'))
 
-            preds, orig, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
-            print '{}->{}: {:.1f}'.format(src_model_name_joint, basename(target_model_name), err)
             for (name, src_model) in zip(src_model_names, src_models):
+                print ('Carrying out white-box attack')
                 pres, _, err = tf_test_error_rate(src_model, x, X_adv, Y_test)
                 print '{}->{}: {:.1f}'.format(src_model_name_joint, basename(name), err)
+            if target_model_name is not None:
+                print ('Carrying out black-box attack')
+                preds, orig, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
+                print '{}->{}: {:.1f}'.format(src_model_name_joint, basename(target_model_name), err)
 
             return
 
@@ -216,7 +208,7 @@ def main(attack, src_model_names, target_model_name):
 
         # white-box attack
         l = len(X_adv)
-
+        print ('Carrying out white-box attack')
         for (name, src_model) in zip(src_model_names, src_models):
             preds_adv, orig, err = tf_test_error_rate(src_model, x, X_adv, Y_test[0:l])
             if args.targeted_flag==1:
@@ -224,10 +216,12 @@ def main(attack, src_model_names, target_model_name):
             print '{}->{}: {:.1f}'.format(basename(name), basename(name), err)
 
         # black-box attack
-        preds, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
-        if args.targeted_flag==1:
-            err = 100.0 - err
-        print '{}->{}: {:.1f}, {}, {} {}'.format(src_model_name_joint, basename(target_model_name), err, avg_l2_perturb, eps, attack)
+        if target_model_name is not None:
+            print ('Carrying out black-box attack')
+            preds, _, err = tf_test_error_rate(target_model, x, X_adv, Y_test)
+            if args.targeted_flag==1:
+                err = 100.0 - err
+            print '{}->{}: {:.1f}, {}, {} {}'.format(src_model_name_joint, basename(target_model_name), err, avg_l2_perturb, eps, attack)
 
 if __name__ == "__main__":
     import argparse
@@ -238,8 +232,8 @@ if __name__ == "__main__":
                         help="source models for attack")
     parser.add_argument('--target_model',type=str,
                         help='path to target model(s)')
-    # parser.add_argument("--eps", type=float, default=0.3,
-    #                     help="FGS attack scale")
+    parser.add_argument("--eps", type=float, default=None,
+                        help="FGS attack scale")
     parser.add_argument("--loss_type", type=str, default='xent',
                         help="Type of loss to use")
     parser.add_argument("--alpha", type=float, default=0.05,
@@ -256,4 +250,21 @@ if __name__ == "__main__":
                         help="Carry out targeted attack")
 
     args = parser.parse_args()
+
+    if args.eps is None:
+        if args.norm == 'linf':
+            # eps_list = list(np.linspace(0.025, 0.1, 4))
+            # eps_list.extend(np.linspace(0.15, 0.5, 8))
+            eps_list = [0.3]
+            if args.attack == "ifgs":
+                eps_list = [0.3]
+        elif args.norm == 'l2':
+            eps_list = list(np.linspace(0.0, 2.0, 5))
+            eps_list.extend(np.linspace(2.5, 9.0, 14))
+            # eps_list = [5.0]
+    else:
+        eps_list = []
+        eps_list.append(args.eps)
+    print(eps_list)
+
     main(args.attack, args.src_models, args.target_model)

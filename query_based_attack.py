@@ -245,7 +245,7 @@ def estimated_grad_attack(X_test, X_test_ini, x, targets, prediction, logits, ep
         U = pca_components(X_test, dim)
     for i in range(BATCH_EVAL_NUM):
         if i % 10 ==0:
-            print('{}, {}'.format(i, eps))
+            print('Batch no.: {}, {}'.format(i, eps))
         curr_sample = X_test[i*BATCH_SIZE:(i+1)*BATCH_SIZE].reshape((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, 1))
         curr_sample_ini = X_test_ini[i*BATCH_SIZE:(i+1)*BATCH_SIZE].reshape((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, 1))
 
@@ -314,7 +314,7 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
         U = pca_components(X_test, dim)
     for i in range(BATCH_EVAL_NUM):
         if i % 10 ==0:
-            print('{}, {}'.format(i, eps))
+            print('Batch no.: {}, {}'.format(i, eps))
         curr_sample = X_test[i*BATCH_SIZE:(i+1)*BATCH_SIZE].reshape((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, 1))
         curr_sample_ini = X_test_ini[i*BATCH_SIZE:(i+1)*BATCH_SIZE].reshape((BATCH_SIZE, FLAGS.IMAGE_ROWS, FLAGS.IMAGE_COLS, 1))
 
@@ -323,7 +323,7 @@ def estimated_grad_attack_iter(X_test, X_test_ini, x, targets, prediction, logit
 
         for j in range(args.num_iter):
             if j % 10 == 0:
-                print j
+                print ('Num_iter:{}'.format(j))
             curr_prediction = K.get_session().run([prediction], feed_dict={x: curr_sample})[0]
 
             p_t = curr_prediction[np.arange(BATCH_SIZE), list(curr_target)]
